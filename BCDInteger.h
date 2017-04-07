@@ -186,86 +186,11 @@ namespace VedicMathLibrary
 
 			return (*this);
 		}
-		BCDInteger& operator*(const BCDInteger& n)
-		{
-			size_t MaxLength = (this->Length > n.Length) ? this->Length : n.Length;
-
-			//Create varibles to hold CrossMultiplication result
-			BCDInteger CrossMultiResult(MaxLength * 2 + 2);
-			char* OriginalDigits = CrossMultiResult.Digits;
-
-			//Object holding result of this method
-			BCDInteger* Product = new BCDInteger(this->Length + n.Length);
-
-			//Initialize X & Y such that X.Length >= Y.Length
-			const BCDInteger *X, *Y;
-			if (this->Length >= n.Length)
-			{
-				X = this;
-				Y = &n;
-			}
-			else
-			{
-				X = &n;
-				Y = this;
-			}
-
-
-			size_t j = 0;
-
-
-			//Phase 1
-			for (size_t i = 0; i < X->Length; i++)
-			{
-				CrossMultiply(*X, *Y, 0, i, CrossMultiResult);
-
-				if (CrossMultiResult.Length > 0)
-				{
-					Product->Digits[j++] = CrossMultiResult.Digits[0];
-
-					//Update CrossMultiResult
-					CrossMultiResult.Digits++;
-					CrossMultiResult.Length--;
-					CrossMultiResult.Capacity--;
-				}
-				else
-					Product->Digits[j++] = 0;
-			}
-
-			//Phase 2
-			for (size_t i = 1; i < Y->Length; i++)
-			{
-				CrossMultiply(*X, *Y, i, MaxLength -1, CrossMultiResult);
-
-				if (CrossMultiResult.Length > 0)
-				{
-					Product->Digits[j++] = CrossMultiResult.Digits[0];
-
-					//Update CrossMultiResult
-					CrossMultiResult.Digits++;
-					CrossMultiResult.Length--;
-					CrossMultiResult.Capacity--;
-				}
-				else
-					Product->Digits[j++] = 0;
-			}
-
-
-			if (CrossMultiResult.Length != 0)
-				Product->Digits[j++] = CrossMultiResult.Digits[0];
-
-
-			//Save Product Length
-			Product->Length = j;
-
-			//Restore original digits reference sot that it can be released when object is destroyed
-			CrossMultiResult.Digits = OriginalDigits;
-
-
-			//Return result
-			return (*Product);
-		}
-
+		
+		
+		
+		
+		
 
 		/*BCDInteger&  operator+=(const char& n)
 		{
@@ -288,7 +213,84 @@ namespace VedicMathLibrary
 			for (size_t i = 1; i <= this->Length; i++)
 				cout << char( this->Digits[this->Length - i] + '0') ;
 		}
-		BCDInteger& TraditionalMultiplication(const BCDInteger& n)
+
+		BCDInteger* VedicMultiplication(const BCDInteger& n)const
+		{
+			size_t MaxLength = (this->Length > n.Length) ? this->Length : n.Length;
+
+			//Object holding result of this method
+			BCDInteger* Product = new BCDInteger(this->Length + n.Length);
+			for (size_t i = 0; i < Product->Capacity; i++)
+				Product->Digits[i] = 0;
+
+
+			//Initialize X & Y such that X.Length >= Y.Length
+			const BCDInteger *X, *Y;
+			if (this->Length >= n.Length)
+			{
+				X = this;
+				Y = &n;
+			}
+			else
+			{
+				X = &n;
+				Y = this;
+			}
+
+
+			size_t j = 0;
+
+
+			//Phase 1
+			for (size_t i = 0; i < X->Length; i++)
+			{
+				//Cross-Multiplication
+				char Ch;
+				for (size_t start = 0, end = i; start <= i; ++start, --end)
+				{
+					Ch = X->at(start) * Y->at(end) + Product->Digits[j];
+					Product->Digits[j] = Ch % 10;
+					Product->Digits[j + 1] += Ch / 10;
+				}
+
+				++j;
+
+
+			}
+
+			//Phase 2
+			for (size_t i = 1; i < Y->Length; i++)
+			{
+				//Cross-Multiplication
+				char Ch;
+				for (size_t start = i, end = MaxLength - 1; start < MaxLength; ++start, --end)
+				{
+					Ch = X->at(start) * Y->at(end) + Product->Digits[j];
+					Product->Digits[j] = Ch % 10;
+					Product->Digits[j + 1] += Ch / 10;
+				}
+
+				++j;
+			}
+
+
+			//Save Product Length
+			if (Product->Digits[j] == 0)
+				Product->Length = j;
+			else
+				Product->Length = j + 1;
+
+			//Set Proper Sign
+			if ((this->Positive && n.Positive) || (!this->Positive && !n.Positive))
+				Product->Positive = true;
+			else
+				Product->Positive = false;
+
+
+			//Return result
+			return Product;
+		}
+		BCDInteger* TraditionalMultiplication(const BCDInteger& n)const
 		{
 			BCDInteger *Product = new BCDInteger(this->Length + n.Length);
 
@@ -323,7 +325,7 @@ namespace VedicMathLibrary
 			else
 				Product->Positive = false;
 
-			return *Product;
+			return Product;
 		}
 
 
