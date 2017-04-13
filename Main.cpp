@@ -17,10 +17,11 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	
 	Sum = 0;
 
+	cout << "[TRD...]";
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
-		Result = a.TraditionalMultiplication(b);
+		Result = a.NewTraditionalQuotient(b);
 		QueryThreadCycleTime(ThreadHandle, &CyclesAfterTask);
 		
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
@@ -31,11 +32,11 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	AvgTraditional = (Sum / Cycles);
 
 	Sum = 0;
-
+	cout << "[VED...]";
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
-		Result = a.VedicMultiplication(b);
+		Result = a.VedicQuotient(b);
 		QueryThreadCycleTime(ThreadHandle, &CyclesAfterTask);
 
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
@@ -47,7 +48,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 }
 void RunTests(string ResultFileName, size_t MaxLength)
 {
-	string StrA("3646474"), StrB("2353455");
+	string StrA("3646474"), StrB("5353455");
 	srand((unsigned)time(NULL));
 
 	HANDLE Th = GetCurrentThread();
@@ -64,12 +65,14 @@ void RunTests(string ResultFileName, size_t MaxLength)
 			//Append random digit
 			int digit = rand() % 10;
 			StrA.append(to_string(digit));
-			digit = rand() % 10;
-			StrB.append(to_string(digit));
+			//digit = rand() % 10;
+			//StrB.append(to_string(digit));
 
 			cout << "\n Running Test with Length: " << StrA.length();
 
 			RunSingleTest(StrA, StrB, Th, AvgVedic, AvgTraditional);
+
+			cout << "  Tr: " << AvgTraditional << "  , VEd: " << AvgVedic;
 
 			//Write data
 			File << StrA.length() << "," << AvgVedic << "," << AvgTraditional << endl;
@@ -84,8 +87,19 @@ void RunTests(string ResultFileName, size_t MaxLength)
 
 int main()
 {
-	RunTests("TestTestResult", 100);
+	RunTests("SubtractTestResult", 100);
 	
+	BCDInteger a("556677996"), b("9444"), d("24543533");
+
+	auto c = d.VedicQuotient(b);
+
+	c->Print();
+
+	cout << "\n";
+
+	c = d.NewTraditionalQuotient(b);
+	c->Print();
+
 	system("pause>nul");
 
 	return 0;

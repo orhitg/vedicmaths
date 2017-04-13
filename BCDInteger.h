@@ -20,16 +20,21 @@ namespace VedicMathLibrary
 
 	class BCDInteger
 	{
-		/******************************************** Data Members ***********************************************/
+		#pragma region Data Members
+
 		private:
 		bool     Positive = true;
 		size_t   Capacity = 0;
 		size_t   Length = 0;
 		char*    Digits = NULL;
 		
+		const size_t NPOS = (-1);
+
+		#pragma endregion		
 
 
-		/******************************************* Constructors & Destructor **********************************/
+		#pragma region Ctor & Dtor
+		
 		public:
 		BCDInteger(){}
 		BCDInteger(size_t initialCapacity)
@@ -53,7 +58,10 @@ namespace VedicMathLibrary
 				delete[] Digits;
 		}
 
-		/******************************************** Private Methods *******************************************/
+		#pragma endregion
+
+		
+		#pragma region Private Methods
 		private:
 		void Resize(size_t newCapacity, bool keepOldData)
 		{
@@ -117,8 +125,10 @@ namespace VedicMathLibrary
 				throw exception("startIndex is greater then endIndex");
 		}
 
+		#pragma endregion
 
-		/*********************************************** Accessors **********************************************/
+		
+		#pragma region Accessors
 		public:
 		bool IsPositive() const { return Positive; }
 		size_t GetCapacity() const { return Capacity; }
@@ -132,10 +142,48 @@ namespace VedicMathLibrary
 			else
 				return 0;
 		}
+		#pragma endregion
 
 
-		/***************************************** Overloaded Operators *****************************************/
+		#pragma region Overloaded Operators
 		public:
+		bool        operator==(const BCDInteger& other)const
+		{
+			//First check if Length can determine equality
+			if (this->Length != other.Length)
+				return false;
+
+			//If length is equal then check digit by digit
+			for (size_t i = 0; i < this->Length; i++)
+				if (this->Digits[i] != other.Digits[i])
+					return false;
+
+			//If no mismatch found then return true
+			return true;
+		}
+		bool        operator<(const BCDInteger& other)const
+		{
+			//First check if Length can determine lesser
+			if (this->Length < other.Length)
+				return true;
+
+			//If length is equal then check digit by digit
+			for (size_t i = this->Length - 1; i != NPOS; i++)
+			{
+				if (this->Digits[i] < other.Digits[i])
+					return true;
+
+				if (this->Digits[i] > other.Digits[i])
+					return false;
+			}
+			//If numbers are equal then return false
+			return false;
+		}
+		bool        operator<=(const BCDInteger& other)const
+		{
+			return (this->operator<(other)) || (this->operator==(other));
+		}
+
 		BCDInteger& operator=(const BCDInteger& source)
 		{
 			//Resize if necessery
@@ -187,23 +235,10 @@ namespace VedicMathLibrary
 			return (*this);
 		}
 		
-		
-		
-		
-		
-
-		/*BCDInteger&  operator+=(const char& n)
-		{
-			static BCDInteger  Cache(1);
-
-			Cache.Digits[0] = n;
-
-			return (*this) += Cache;
-		}*/
+		#pragma endregion
 
 
-
-		/******************************************* Public Methods *********************************************/
+		#pragma region Public Methods
 		public:
 		void Print()
 		{
@@ -329,8 +364,204 @@ namespace VedicMathLibrary
 		}
 
 
+		BCDInteger* VedicQuotient(const BCDInteger& diviser)const 
+		{
+			//Split Diviser         
+		
+			char  DiviserDigit = diviser.Digits[diviser.Length - 1];
+			char* FlagDigits = diviser.Digits;
+			const size_t FlagDigitCount = diviser.Length - 1;
 
-		/******************************************* Static Methods**********************************************/
+			//Split Dividend
+			char* RemainderDigits = this->Digits;
+			const size_t RemainderDigitcount = FlagDigitCount;
+
+			char* QuotientDigits = this->Digits + RemainderDigitcount;
+			const size_t QuotientDigitCount = this->Length - RemainderDigitcount;
+
+			//Quotient
+			BCDInteger *Q = new BCDInteger(QuotientDigitCount);
+			Q->Length = Q->Capacity;
+
+			//Indices
+			size_t i = QuotientDigitCount - 1,
+				   j = QuotientDigitCount - 1;
+
+
+			//Effective Dividend                   
+			long ED = QuotientDigits[i], q = 0, r = 0, T1 = 0, T2 = 0;
+
+			if (ED < DiviserDigit)
+			{
+				ED = (ED * 10) + QuotientDigits[--i];
+				--j;
+				--(Q->Length);				
+			}
+
+			while ( i != NPOS)
+			{
+				if (ED >= 0)
+				{
+					q = ED/ DiviserDigit;
+					r = ED%DiviserDigit;
+
+					--i;
+
+					Q->Digits[j--] = q;
+				}
+				else
+				{
+					--(Q->Digits[j]);
+					r += DiviserDigit;
+				}
+
+				//Cross Multiply Q & FlagDigits
+				T1 = 0;
+				size_t MinCount = FlagDigitCount;
+				if (MinCount > (Q->Length - j - 1))
+					MinCount = (Q->Length - j - 1);
+
+				for (size_t k = j+1, l = MinCount - 1; l != NPOS; k++ ,l--)
+				{
+					T1 += (Q->Digits[k] * FlagDigits[l]);
+				}
+
+				T2 = r * 10 + QuotientDigits[i];
+				ED = T2 - T1;
+
+			}
+			
+			//Set Proper Sign
+			if ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive))
+				Q->Positive = true;
+			else
+				Q->Positive = false;
+
+
+			return Q;
+		}
+		
+		BCDInteger* NewTraditionalQuotient(const BCDInteger& diviser)const
+		{
+			BCDInteger *Q;
+			size_t i = this->Length - diviser.Length, k = 0;
+		
+			
+			char* TempStore, *ED, *MultiResult;
+			size_t EDLen = 0, MultiResultLen = 0;
+
+			TempStore = new char[this->Length];
+			for (k = 0; k < this->Length; k++)
+				TempStore[k] = this->Digits[k];
+
+			ED = TempStore + i;
+			EDLen = diviser.Length;
+			MultiResult = new char[diviser.Length + 1];
+
+			Q = new BCDInteger(i + 1);
+			Q->Length = Q->Capacity;
+			
+			size_t j = Q->Capacity - 1;
+
+			char Guess = 0;
+			bool CreateNewGuess = true;
+
+			while (i != NPOS)
+			{
+				//Guess
+				if (CreateNewGuess)
+				{
+					char T = ED[diviser.Length - 1];
+					if (EDLen > diviser.Length)
+						T += 10 * ED[diviser.Length];
+
+					Guess = T / diviser.Digits[diviser.Length - 1];
+					Guess = Guess % 10;
+				}
+				else
+					Guess--;
+
+				//cout << "GuessComplete";
+
+				char Carry, T;
+
+				//Multiplication
+				Carry = 0;
+				for (k = 0; k < diviser.Length; k++)
+				{
+					T = diviser.Digits[k] * Guess + Carry;
+					Carry = T / 10;
+					MultiResult[k] = T % 10;
+				}
+				MultiResult[k] = Carry;
+				if (Carry > 0)
+					MultiResultLen = diviser.Length + 1;
+				else
+					MultiResultLen = diviser.Length;
+				
+				//cout << "MultiComplete";
+				//Ensure Mutiplication result is less then ED
+				
+				if (EDLen < MultiResultLen)
+				{
+					CreateNewGuess = false;
+					continue;
+				}
+				bool Lesser = false;
+				for (size_t k = 0 ,l = EDLen-1 ; k < EDLen; k++, --l)
+				{
+					if (ED[l] < MultiResult[l])
+					{
+						Lesser = true;
+						break;
+					}
+					else
+						if (ED[l] > MultiResult[l])
+							break;
+				}
+				if (Lesser)
+				{
+					CreateNewGuess = false;
+					continue;
+				}
+
+
+				//Subtraction
+				Carry = 1;
+				for (k = 0; k < EDLen; k++)
+				{
+					T = ED[k] + (9 - MultiResult[k]) + Carry;
+					Carry = T / 10;
+					ED[k] = T % 10;
+				}
+				
+				if (ED[EDLen - 1] != 0)
+					++EDLen;
+
+				Q->Digits[j--] = Guess;
+				CreateNewGuess = true;
+				ED--;		
+				i--;
+
+			}
+
+
+
+			//Set Proper Sign
+			if ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive))
+				Q->Positive = true;
+			else
+				Q->Positive = false;
+
+			delete[] TempStore;
+
+			return Q;
+		}
+
+		#pragma endregion
+
+		
+		#pragma region Static Methods
 		public:
 		static BCDInteger& Parse(const string& valueString)
 		{
@@ -394,7 +625,7 @@ namespace VedicMathLibrary
 
 			return *Value;
 		}
-		
+		#pragma endregion
 	};
 
 
