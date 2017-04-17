@@ -17,7 +17,6 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	
 	Sum = 0;
 
-	cout << "[TRD...]";
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
@@ -26,13 +25,15 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 		
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
 
+		cout << "\n";
+		Result->Print();
+
 		delete Result;
 	}
 
 	AvgTraditional = (Sum / Cycles);
 
 	Sum = 0;
-	cout << "[VED...]";
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
@@ -41,6 +42,9 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
 
+		cout << "\n";
+		Result->Print();
+
 		delete Result;
 	}
 
@@ -48,7 +52,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 }
 void RunTests(string ResultFileName, size_t MaxLength)
 {
-	string StrA("3646474"), StrB("5353455");
+	string StrA("3646474"), StrB("679");
 	srand((unsigned)time(NULL));
 
 	HANDLE Th = GetCurrentThread();
@@ -69,11 +73,13 @@ void RunTests(string ResultFileName, size_t MaxLength)
 			//StrB.append(to_string(digit));
 
 			cout << "\n Running Test with Length: " << StrA.length();
+			
+			cout << "[A = " << StrA << "][B = " << StrB << "]";
 
-			RunSingleTest(StrA, StrB, Th, AvgVedic, AvgTraditional);
+			RunSingleTest(StrA, StrB, Th, AvgVedic, AvgTraditional, 1);
 
 			cout << "  Tr: " << AvgTraditional << "  , VEd: " << AvgVedic;
-
+		
 			//Write data
 			File << StrA.length() << "," << AvgVedic << "," << AvgTraditional << endl;
 		}
@@ -85,20 +91,28 @@ void RunTests(string ResultFileName, size_t MaxLength)
 	}
 }
 
-int main()
+void Temp()
 {
-	RunTests("SubtractTestResult", 100);
-	
-	BCDInteger a("556677996"), b("9444"), d("24543533");
+	BCDInteger a("446663543486987464354469897076"), b("668567474766587768705"), d("123"), e("50607");
 
-	auto c = d.VedicQuotient(b);
+	BCDInteger* c = a.NewTraditionalQuotient(b);
 
 	c->Print();
+
+	c = e.VedicQuotient(d);
 
 	cout << "\n";
 
-	c = d.NewTraditionalQuotient(b);
 	c->Print();
+
+}
+
+
+int main()
+{
+	RunTests("QuotientTestResult", 50);
+	
+	//Temp();
 
 	system("pause>nul");
 

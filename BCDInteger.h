@@ -87,6 +87,10 @@ namespace VedicMathLibrary
 
 				this->Length = OldLength;
 			}
+			
+			//Delete old digits
+			if (OldDigits != NULL)
+				delete[] OldDigits;
 		}
 	    void CrossMultiply(const BCDInteger& a, const BCDInteger& b, size_t startIndex, size_t endIndex, BCDInteger& result)const
 		{
@@ -168,7 +172,7 @@ namespace VedicMathLibrary
 				return true;
 
 			//If length is equal then check digit by digit
-			for (size_t i = this->Length - 1; i != NPOS; i++)
+			for (size_t i = this->Length - 1; i != NPOS; i--)
 			{
 				if (this->Digits[i] < other.Digits[i])
 					return true;
@@ -389,21 +393,16 @@ namespace VedicMathLibrary
 
 
 			//Effective Dividend                   
-			long ED = QuotientDigits[i], q = 0, r = 0, T1 = 0, T2 = 0;
+			long ED = QuotientDigits[i], q = 0, r = 0, rOrig = 0, T1 = 0, T2 = 0;
 
-			if (ED < DiviserDigit)
-			{
-				ED = (ED * 10) + QuotientDigits[--i];
-				--j;
-				--(Q->Length);				
-			}
-
+			
 			while ( i != NPOS)
 			{
 				if (ED >= 0)
 				{
 					q = ED/ DiviserDigit;
 					r = ED%DiviserDigit;
+					rOrig = r;
 
 					--i;
 
@@ -411,8 +410,17 @@ namespace VedicMathLibrary
 				}
 				else
 				{
-					--(Q->Digits[j]);
-					r += DiviserDigit;
+					//As j as already been decreased we need to update j+1
+
+					--(Q->Digits[j+1]);
+					if (Q->Digits[j + 1] < 0)
+					{
+						Q->Digits[j + 2] --;
+						Q->Digits[j + 1] = 9;
+						//r = rOrig;
+					}
+					
+						r += DiviserDigit;
 				}
 
 				//Cross Multiply Q & FlagDigits
@@ -443,47 +451,50 @@ namespace VedicMathLibrary
 		
 		BCDInteger* NewTraditionalQuotient(const BCDInteger& diviser)const
 		{
+			//Calculate digits in Quotient
+			size_t QuotientDigitCount = (this->Length - diviser.Length) + 1;
+
+			//Create space to hold Quotient
 			BCDInteger *Q;
-			size_t i = this->Length - diviser.Length, k = 0;
-		
-			
-			char* TempStore, *ED, *MultiResult;
-			size_t EDLen = 0, MultiResultLen = 0;
+			Q = new BCDInteger(QuotientDigitCount);
+			Q->Length = QuotientDigitCount;
+			size_t j = QuotientDigitCount - 1;
 
-			TempStore = new char[this->Length];
-			for (k = 0; k < this->Length; k++)
-				TempStore[k] = this->Digits[k];
+			//Create Effective dividend
+			BCDInteger ED;
+			ED = (*this);
+			char *EDOriginalArray = ED.Digits;
+			ED.Digits = (ED.Digits + QuotientDigitCount) - 1;
+			ED.Length = diviser.Length;
 
-			ED = TempStore + i;
-			EDLen = diviser.Length;
-			MultiResult = new char[diviser.Length + 1];
+			//Create Space to hold result of multiplication between Guess and divise
+			BCDInteger MultiResult(diviser.Length + 1);
 
-			Q = new BCDInteger(i + 1);
-			Q->Length = Q->Capacity;
-			
-			size_t j = Q->Capacity - 1;
-
-			char Guess = 0;
+			//Other variables
+			char Guess = 0, Carry = 0, T;
 			bool CreateNewGuess = true;
+			size_t i = QuotientDigitCount - 1,  k = 0;
 
+			
+			//Master Loop
 			while (i != NPOS)
 			{
 				//Guess
 				if (CreateNewGuess)
 				{
-					char T = ED[diviser.Length - 1];
-					if (EDLen > diviser.Length)
+					T = ED[diviser.Length - 1];
+					if (ED.Length > diviser.Length)
 						T += 10 * ED[diviser.Length];
 
 					Guess = T / diviser.Digits[diviser.Length - 1];
-					Guess = Guess % 10;
+					if (Guess > 9)
+						Guess = 9;
 				}
 				else
 					Guess--;
 
 				//cout << "GuessComplete";
 
-				char Carry, T;
 
 				//Multiplication
 				Carry = 0;
@@ -491,69 +502,49 @@ namespace VedicMathLibrary
 				{
 					T = diviser.Digits[k] * Guess + Carry;
 					Carry = T / 10;
-					MultiResult[k] = T % 10;
+					MultiResult.Digits[k] = T % 10;
 				}
-				MultiResult[k] = Carry;
-				if (Carry > 0)
-					MultiResultLen = diviser.Length + 1;
-				else
-					MultiResultLen = diviser.Length;
-				
-				//cout << "MultiComplete";
-				//Ensure Mutiplication result is less then ED
-				
-				if (EDLen < MultiResultLen)
-				{
-					CreateNewGuess = false;
-					continue;
-				}
-				bool Lesser = false;
-				for (size_t k = 0 ,l = EDLen-1 ; k < EDLen; k++, --l)
-				{
-					if (ED[l] < MultiResult[l])
-					{
-						Lesser = true;
-						break;
-					}
-					else
-						if (ED[l] > MultiResult[l])
-							break;
-				}
-				if (Lesser)
-				{
-					CreateNewGuess = false;
-					continue;
-				}
+				MultiResult.Digits[k] = Carry;
 
+				if (Carry > 0)
+					MultiResult.Length = diviser.Length + 1;
+				else
+					MultiResult.Length = diviser.Length;
+
+				//Ensure Mutiplication result is less then ED
+				if (ED < MultiResult)
+				{
+					CreateNewGuess = false;
+					continue;
+				}
 
 				//Subtraction
 				Carry = 1;
-				for (k = 0; k < EDLen; k++)
+				for (k = 0; k < ED.Length; k++)
 				{
-					T = ED[k] + (9 - MultiResult[k]) + Carry;
+					T = ED.Digits[k] + (9 - MultiResult[k]) + Carry;
 					Carry = T / 10;
-					ED[k] = T % 10;
+					ED.Digits[k] = T % 10;
 				}
 				
-				if (ED[EDLen - 1] != 0)
-					++EDLen;
+				if (ED.Digits[ED.Length - 1] != 0)
+					++ED.Length;
 
 				Q->Digits[j--] = Guess;
 				CreateNewGuess = true;
-				ED--;		
+				ED.Digits--;		
 				i--;
 
 			}
-
-
-
+			
 			//Set Proper Sign
 			if ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive))
 				Q->Positive = true;
 			else
 				Q->Positive = false;
 
-			delete[] TempStore;
+			//Restore original digits array for  ED
+			ED.Digits = EDOriginalArray;
 
 			return Q;
 		}
