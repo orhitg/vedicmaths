@@ -1,7 +1,7 @@
 /*
  *   File Name: BCDInteger.h
- *   About:     Contains 'BCDInteger' class which represents integer as an array of bytes where each byte corresponds to 
- *              a decimal digit. 
+ *   About:     Contains 'BCDInteger' class which represents integer as an array of bytes where each byte corresponds to
+ *              a decimal digit.
  */
 
 
@@ -14,7 +14,7 @@
 namespace VedicMathLibrary
 {
 	using std::cout;
-	using std::string; 
+	using std::string;
 	using std::exception;
 
 
@@ -27,16 +27,16 @@ namespace VedicMathLibrary
 		size_t   Capacity = 0;
 		size_t   Length = 0;
 		char*    Digits = NULL;
-		
+
 		const size_t NPOS = (-1);
 
 		#pragma endregion		
 
 
 		#pragma region Ctor & Dtor
-		
+
 		public:
-		BCDInteger(){}
+		BCDInteger() {}
 		BCDInteger(size_t initialCapacity)
 		{
 			this->Resize(initialCapacity, false);
@@ -60,7 +60,7 @@ namespace VedicMathLibrary
 
 		#pragma endregion
 
-		
+
 		#pragma region Private Methods
 		private:
 		void Resize(size_t newCapacity, bool keepOldData)
@@ -73,7 +73,7 @@ namespace VedicMathLibrary
 			char *Temp = new char[newCapacity];
 			char *OldDigits = this->Digits;
 			size_t OldLength = this->Length;
-			
+
 			this->Digits = Temp;
 			this->Capacity = newCapacity;
 			this->Length = 0;
@@ -87,12 +87,12 @@ namespace VedicMathLibrary
 
 				this->Length = OldLength;
 			}
-			
+
 			//Delete old digits
 			if (OldDigits != NULL)
 				delete[] OldDigits;
 		}
-	    void CrossMultiply(const BCDInteger& a, const BCDInteger& b, size_t startIndex, size_t endIndex, BCDInteger& result)const
+		void CrossMultiply(const BCDInteger& a, const BCDInteger& b, size_t startIndex, size_t endIndex, BCDInteger& result)const
 		{
 			if (startIndex <= endIndex)
 			{
@@ -110,17 +110,17 @@ namespace VedicMathLibrary
 					if (Ch == 0)
 						Temp.Length = 0;
 					else
-					if (Ch < 10)
-					{
-						Temp.Length = 1;
-						Temp.Digits[0] = Ch;
-					}
-					else
-					{
-						Temp.Length = 2;
-						Temp.Digits[0] = Ch % 10;
-						Temp.Digits[1] = Ch / 10;
-					}					
+						if (Ch < 10)
+						{
+							Temp.Length = 1;
+							Temp.Digits[0] = Ch;
+						}
+						else
+						{
+							Temp.Length = 2;
+							Temp.Digits[0] = Ch % 10;
+							Temp.Digits[1] = Ch / 10;
+						}
 
 					result += Temp;
 				}
@@ -131,14 +131,14 @@ namespace VedicMathLibrary
 
 		#pragma endregion
 
-		
+
 		#pragma region Accessors
 		public:
 		bool IsPositive() const { return Positive; }
 		size_t GetCapacity() const { return Capacity; }
 		size_t GetLength() const { return Length; }
 
-		char& operator[](size_t i){ return Digits[i]; }
+		char& operator[](size_t i) { return Digits[i]; }
 		char  at(size_t i)const
 		{
 			if (i < Length)
@@ -216,7 +216,7 @@ namespace VedicMathLibrary
 			//Add 
 			size_t MaxLength = this->Length >= n.Length ? this->Length : n.Length;
 
-			for (;i < MaxLength ; i++)
+			for (; i < MaxLength; i++)
 			{
 				Ch = this->at(i) + n.at(i) + Carry;
 				this->Digits[i] = Ch % 10;
@@ -238,7 +238,7 @@ namespace VedicMathLibrary
 
 			return (*this);
 		}
-		
+
 		#pragma endregion
 
 
@@ -250,7 +250,7 @@ namespace VedicMathLibrary
 				cout << '-';
 
 			for (size_t i = 1; i <= this->Length; i++)
-				cout << char( this->Digits[this->Length - i] + '0') ;
+				cout << char(this->Digits[this->Length - i] + '0');
 		}
 
 		BCDInteger* VedicMultiplication(const BCDInteger& n)const
@@ -368,10 +368,118 @@ namespace VedicMathLibrary
 		}
 
 
-		BCDInteger* VedicQuotient(const BCDInteger& diviser)const 
+		long VedicQuotientCrossMulti(char* flagDigits, size_t flagDigitCount, char* quotientDigits, size_t quotientDigitCount)const
+		{
+			long Result = 0;
+			size_t MinCount = flagDigitCount < quotientDigitCount ? flagDigitCount : quotientDigitCount;
+
+			for (size_t i = 0, j = MinCount - 1; i < MinCount; i++, j--)
+				Result += (flagDigits[i] * quotientDigits[j]);
+
+			return Result;
+		}
+
+
+
+		void VedicRemainder(const char* flagDigits, size_t flagDigitCount, const char* qDigits, size_t qDigitCount,
+			                const char* remainderDigits, size_t remainderDigitCount, long r, BCDInteger* result)const 
+		{
+			//Set result as negative so that we can simply return to signify a failure
+			result->Positive = false;
+
+
+			//Step 1: Prepare storage for Remainder
+			result->Resize(remainderDigitCount + 3, false);			
+			for (size_t j = 0; j < remainderDigitCount; j++)
+				result->Digits[j] = remainderDigits[j];
+			
+			result->Length = remainderDigitCount;
+
+			long Tr = r;
+			while (Tr > 0)
+			{
+				result->Digits[result->Length++] = Tr % 10;
+				Tr = Tr / 10;
+			}
+
+			
+			//Step 2:Prepare Storage for Cross-Product of flagDigits and qDigits
+			//       Also reserve space for Zeros added by multiplication of 10
+			size_t MinDigitCount = (flagDigitCount < qDigitCount) ? flagDigitCount : qDigitCount;
+			size_t CrossProductCapacity = MinDigitCount + 2;
+			size_t Tm = MinDigitCount;
+			while (Tm > 0)
+			{
+				CrossProductCapacity++;
+				Tm = Tm / 10;
+			}
+			char* CrossProduct = new char[CrossProductCapacity];
+
+			//Step 3: Calculate remainder
+			for (size_t x = MinDigitCount-1; x!= NPOS; --x)
+			{
+				for (size_t i = 0; i < CrossProductCapacity; i++)          //Zero-Out Storage
+					CrossProduct[i] = 0;
+
+				//SubStep 1: Calculate Cross Product
+				size_t CrossProductLength = 0, k;
+				char   T = 0, Carry = 0;
+				for (size_t i = 0, j = x; i <= x; i++, --j)
+				{
+					T = flagDigits[i] * qDigits[j];
+					k = x;
+
+					while (T > 0 || Carry > 0)
+					{
+						CrossProduct[k] += (T % 10 + Carry);
+						Carry = CrossProduct[k] / 10;
+						
+						CrossProduct[k] %= 10;
+						T /= 10;
+
+						++k;
+					} 
+
+					if (k > CrossProductLength)
+						CrossProductLength = k;
+				}
+				
+
+				//If CrossProductLength is greater than result's length then remainder is 
+				//negative and we should return
+				if (CrossProductLength > result->Length)
+					return;
+			
+				//SubStep 2: Subtract CrossProduct from Remainder(result)
+				Carry = 1;				
+				for (size_t i = 0; i < CrossProductLength; i++)
+				{
+					T = result->Digits[i] + (9 - CrossProduct[i]) + Carry;
+					result->Digits[i] = T % 10;
+					Carry = T / 10;
+				}
+				for (size_t i = CrossProductLength; i < result->Length; i++)
+				{
+					T = result->Digits[i] + 9 + Carry;
+					result->Digits[i] = T % 10;
+					Carry = T / 10;
+				}
+
+				//If Carry == 0 then result is negative
+				if (Carry == 0)
+					return;
+
+				//TODO: Trim result
+			}
+
+			result->Positive = true;
+			return;			
+		}
+
+		BCDInteger* VedicQuotient(const BCDInteger& diviser)const
 		{
 			//Split Diviser         
-		
+
 			char  DiviserDigit = diviser.Digits[diviser.Length - 1];
 			char* FlagDigits = diviser.Digits;
 			const size_t FlagDigitCount = diviser.Length - 1;
@@ -387,58 +495,78 @@ namespace VedicMathLibrary
 			BCDInteger *Q = new BCDInteger(QuotientDigitCount);
 			Q->Length = Q->Capacity;
 
+			//Remainder
+			BCDInteger *R = new BCDInteger();
+
 			//Indices
 			size_t i = QuotientDigitCount - 1,
-				   j = QuotientDigitCount - 1;
+				j = QuotientDigitCount;
 
 
 			//Effective Dividend                   
-			long ED = QuotientDigits[i], q = 0, r = 0, rOrig = 0, T1 = 0, T2 = 0;
+			long ED = QuotientDigits[i], q = 0, r = 0, T1 = 0, T2 = 0;
 
-			
-			while ( i != NPOS)
+			bool Run = true;
+			while (Run)
 			{
 				if (ED >= 0)
 				{
-					q = ED/ DiviserDigit;
-					r = ED%DiviserDigit;
-					rOrig = r;
+					if(i == NPOS)
+					{
+						VedicRemainder(FlagDigits, FlagDigitCount, Q->Digits, Q->Length, RemainderDigits, RemainderDigitcount, r, R);
+						if (R->Positive)
+							Run = false;
+						else
+						{
+							ED = -1;
+							continue;
+						}
+					}
+					else
+					{
+						q = ED / DiviserDigit;
+						r = ED % DiviserDigit;
 
-					--i;
-
-					Q->Digits[j--] = q;
+						--i;
+						Q->Digits[--j] = q;
+					}
 				}
 				else
 				{
-					//As j as already been decreased we need to update j+1
-
-					--(Q->Digits[j+1]);
-					if (Q->Digits[j + 1] < 0)
+					if (Q->Digits[j] == 0) //Backtracking
 					{
-						Q->Digits[j + 2] --;
-						Q->Digits[j + 1] = 9;
-						//r = rOrig;
+						++j;
+						++i;
+						long T = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Q->Digits + j, QuotientDigitCount - j);
+						r += T;
+						r /= 10;
+
+						//Change ED to a negative value so that in next iteration we again end up here
+						ED = -1;
+						continue;
+
 					}
-					
+					else
+					{
+						--(Q->Digits[j]);
 						r += DiviserDigit;
+						
+						if (i == NPOS)
+							ED = 1;
+					}
 				}
 
 				//Cross Multiply Q & FlagDigits
-				T1 = 0;
-				size_t MinCount = FlagDigitCount;
-				if (MinCount > (Q->Length - j - 1))
-					MinCount = (Q->Length - j - 1);
-
-				for (size_t k = j+1, l = MinCount - 1; l != NPOS; k++ ,l--)
+				if (i != NPOS) 
 				{
-					T1 += (Q->Digits[k] * FlagDigits[l]);
+					T1 = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Q->Digits + j, QuotientDigitCount - j);
+
+					T2 = r * 10 + QuotientDigits[i];
+					ED = T2 - T1;
 				}
 
-				T2 = r * 10 + QuotientDigits[i];
-				ED = T2 - T1;
-
 			}
-			
+
 			//Set Proper Sign
 			if ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive))
 				Q->Positive = true;
@@ -448,8 +576,8 @@ namespace VedicMathLibrary
 
 			return Q;
 		}
-		
-		BCDInteger* NewTraditionalQuotient(const BCDInteger& diviser)const
+
+		BCDInteger* TraditionalQuotient(const BCDInteger& diviser)const
 		{
 			//Calculate digits in Quotient
 			size_t QuotientDigitCount = (this->Length - diviser.Length) + 1;
@@ -473,9 +601,9 @@ namespace VedicMathLibrary
 			//Other variables
 			char Guess = 0, Carry = 0, T;
 			bool CreateNewGuess = true;
-			size_t i = QuotientDigitCount - 1,  k = 0;
+			size_t i = QuotientDigitCount - 1, k = 0;
 
-			
+
 			//Master Loop
 			while (i != NPOS)
 			{
@@ -526,17 +654,17 @@ namespace VedicMathLibrary
 					Carry = T / 10;
 					ED.Digits[k] = T % 10;
 				}
-				
+
 				if (ED.Digits[ED.Length - 1] != 0)
 					++ED.Length;
 
 				Q->Digits[j--] = Guess;
 				CreateNewGuess = true;
-				ED.Digits--;		
+				ED.Digits--;
 				i--;
 
 			}
-			
+
 			//Set Proper Sign
 			if ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive))
 				Q->Positive = true;
@@ -551,7 +679,7 @@ namespace VedicMathLibrary
 
 		#pragma endregion
 
-		
+
 		#pragma region Static Methods
 		public:
 		static BCDInteger& Parse(const string& valueString)
@@ -564,7 +692,7 @@ namespace VedicMathLibrary
 				if (ch != '+' && ch != '-' && (ch < '1' || ch > '9'))
 					throw exception("Error parsing valueString! Invalid character encountered.");
 
-				if ((ch == '+' || ch == '-')  && (valueString.length() == 1))
+				if ((ch == '+' || ch == '-') && (valueString.length() == 1))
 					throw exception("Error parsing valueString! Invalid format.");
 
 				for (size_t i = 1; i < valueString.length(); i++)
@@ -584,7 +712,7 @@ namespace VedicMathLibrary
 				//Calculate sign and digit Count
 
 				size_t DigitCount = valueString.length();
-				
+
 				char ch = valueString[0];
 				if (ch == '-')
 				{
@@ -592,15 +720,15 @@ namespace VedicMathLibrary
 					DigitCount--;
 				}
 				else
-				if (ch == '+')
-				{
-					Value->Positive = true;
-					DigitCount--;
-				}
-				else
-				{
-					Value->Positive = true;
-				}
+					if (ch == '+')
+					{
+						Value->Positive = true;
+						DigitCount--;
+					}
+					else
+					{
+						Value->Positive = true;
+					}
 
 
 				//Allocate memory
@@ -610,7 +738,7 @@ namespace VedicMathLibrary
 				//Fill digits
 				for (size_t i = 0, j = valueString.length() - 1; i < DigitCount; ++i, --j)
 					Value->Digits[i] = valueString[j] - '0';
-				
+
 				Value->Length = DigitCount;
 			}
 

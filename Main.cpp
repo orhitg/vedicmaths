@@ -20,7 +20,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
-		Result = a.NewTraditionalQuotient(b);
+		Result = a.TraditionalQuotient(b);
 		QueryThreadCycleTime(ThreadHandle, &CyclesAfterTask);
 		
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
@@ -52,7 +52,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 }
 void RunTests(string ResultFileName, size_t MaxLength)
 {
-	string StrA("3646474"), StrB("679");
+	string StrA("3646474"), StrB("459");
 	srand((unsigned)time(NULL));
 
 	HANDLE Th = GetCurrentThread();
@@ -74,7 +74,7 @@ void RunTests(string ResultFileName, size_t MaxLength)
 
 			cout << "\n Running Test with Length: " << StrA.length();
 			
-			cout << "[A = " << StrA << "][B = " << StrB << "]";
+			//cout << "[A = " << StrA << "][B = " << StrB << "]";
 
 			RunSingleTest(StrA, StrB, Th, AvgVedic, AvgTraditional, 1);
 
@@ -95,7 +95,7 @@ void Temp()
 {
 	BCDInteger a("446663543486987464354469897076"), b("668567474766587768705"), d("123"), e("50607");
 
-	BCDInteger* c = a.NewTraditionalQuotient(b);
+	BCDInteger* c = a.TraditionalQuotient(b);
 
 	c->Print();
 
