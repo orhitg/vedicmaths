@@ -571,23 +571,21 @@ namespace VedicMathLibrary
 
 			return Product;
 		}
-		BCDInteger* TraditionalDivision(const BCDInteger& diviser, BCDInteger& quotient, BCDInteger& remainder )const
+		void TraditionalDivision(const BCDInteger& diviser, BCDInteger& quotient, BCDInteger& remainder )const
 		{
 			//Calculate digits in Quotient
 			size_t QuotientDigitCount = (this->Length - diviser.Length) + 1;
 
 			//Create space to hold Quotient
-			BCDInteger *Q;
-			Q = new BCDInteger(QuotientDigitCount);
-			Q->Length = QuotientDigitCount;
+			quotient.Resize(QuotientDigitCount, false);
+			quotient.Length = QuotientDigitCount;
 			size_t j = QuotientDigitCount - 1;
 
 			//Create Effective dividend
-			BCDInteger ED;
-			ED = (*this);
-			char *EDOriginalArray = ED.Digits;
-			ED.Digits = (ED.Digits + QuotientDigitCount) - 1;
-			ED.Length = diviser.Length;
+			remainder = (*this);
+			char *EDOriginalArray = remainder.Digits;
+			remainder.Digits = (remainder.Digits + QuotientDigitCount) - 1;
+			remainder.Length = diviser.Length;
 
 			//Create Space to hold result of multiplication between Guess and divise
 			BCDInteger MultiResult(diviser.Length + 1);
@@ -604,9 +602,9 @@ namespace VedicMathLibrary
 				//Guess
 				if (CreateNewGuess)
 				{
-					T = ED[diviser.Length - 1];
-					if (ED.Length > diviser.Length)
-						T += 10 * ED[diviser.Length];
+					T = remainder[diviser.Length - 1];
+					if (remainder.Length > diviser.Length)
+						T += 10 * remainder[diviser.Length];
 
 					Guess = T / diviser.Digits[diviser.Length - 1];
 					if (Guess > 9)
@@ -614,9 +612,6 @@ namespace VedicMathLibrary
 				}
 				else
 					Guess--;
-
-				//cout << "GuessComplete";
-
 
 				//Multiplication
 				Carry = 0;
@@ -634,7 +629,7 @@ namespace VedicMathLibrary
 					MultiResult.Length = diviser.Length;
 
 				//Ensure Mutiplication result is less then ED
-				if (ED < MultiResult)
+				if (remainder < MultiResult)
 				{
 					CreateNewGuess = false;
 					continue;
@@ -642,33 +637,30 @@ namespace VedicMathLibrary
 
 				//Subtraction
 				Carry = 1;
-				for (k = 0; k < ED.Length; k++)
+				for (k = 0; k < remainder.Length; k++)
 				{
-					T = ED.Digits[k] + (9 - MultiResult[k]) + Carry;
+					T = remainder.Digits[k] + (9 - MultiResult[k]) + Carry;
 					Carry = T / 10;
-					ED.Digits[k] = T % 10;
+					remainder.Digits[k] = T % 10;
 				}
 
-				if (ED.Digits[ED.Length - 1] != 0)
-					++ED.Length;
+				if (remainder.Digits[remainder.Length - 1] != 0)
+					++remainder.Length;
 
-				Q->Digits[j--] = Guess;
+				quotient.Digits[j--] = Guess;
 				CreateNewGuess = true;
-				ED.Digits--;
+				remainder.Digits--;
 				i--;
 
 			}
 
-			//Set Proper Sign
-			if ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive))
-				Q->Positive = true;
-			else
-				Q->Positive = false;
-
 			//Restore original digits array for  ED
-			ED.Digits = EDOriginalArray;
+			remainder.Digits = EDOriginalArray;
 
-			return Q;
+			//Set Proper Sign
+			quotient.Positive  = ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive));
+			remainder.Positive = ((this->Positive && diviser.Positive) || (this->Positive && !diviser.Positive));
+				
 		}
 
 		#pragma endregion

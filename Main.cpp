@@ -14,7 +14,7 @@ using namespace std;
 
 void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& AvgVedic, UINT64& AvgTraditional, size_t Cycles = 10000)
 {
-	BCDInteger a(StrA), b(StrB), *Result;
+	BCDInteger a(StrA), b(StrB), q, r, *Result;
 	//cpp_int b_a(StrA), b_b(StrB),b_c;
 	UINT64 CyclesAfterTask, CyclesBeforeTask, Sum;
 	
@@ -23,16 +23,15 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
-		Result = a.TraditionalDivision(b);
+		a.TraditionalDivision(b, q, r);
 		//b_c = b_a / b_b;
 		QueryThreadCycleTime(ThreadHandle, &CyclesAfterTask);
 		
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
 
 		cout << "\n";
-		Result->Print();
+		q.Print();
 
-		delete Result;
 	}
 
 	AvgTraditional = (Sum / Cycles);
@@ -56,7 +55,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 }
 void RunTests(string ResultFileName, size_t MaxLength)
 {
-	string StrA("3646474"), StrB("126436575476575");
+	string StrA("3646474"), StrB("126");
 	srand((unsigned)time(NULL));
 
 	HANDLE Th = GetCurrentThread();
@@ -104,9 +103,9 @@ void Temp()
 	c->Print();
 	
 	cout << "\n";
-	c = a.TraditionalDivision(b);
+	//c = a.TraditionalDivision(b);
 
-	c->Print();
+	//c->Print();
 }
 
 
