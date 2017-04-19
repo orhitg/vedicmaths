@@ -250,7 +250,7 @@ namespace VedicMathLibrary
 			return Result;
 		}
 		void VedicRemainder(const char* flagDigits, size_t flagDigitCount, const char* qDigits, size_t qDigitCount,
-			const char* remainderDigits, size_t remainderDigitCount, long r, BCDInteger* result)const
+			                const char* remainderDigits, size_t remainderDigitCount, long r, BCDInteger* result)const
 		{
 			//Set result as negative so that we can simply return to signify a failure
 			result->Positive = false;
@@ -345,26 +345,26 @@ namespace VedicMathLibrary
 		}
 
 		public:
-		BCDInteger* VedicMultiplication(const BCDInteger& n)const
+		void VedicMultiplication(const BCDInteger& Multiplier, BCDInteger& Product)const
 		{
-			size_t MaxLength = (this->Length > n.Length) ? this->Length : n.Length;
+			size_t MaxLength = (this->Length > Multiplier.Length) ? this->Length : Multiplier.Length;
 
 			//Object holding result of this method
-			BCDInteger* Product = new BCDInteger(this->Length + n.Length);
-			for (size_t i = 0; i < Product->Capacity; i++)
-				Product->Digits[i] = 0;
+			Product.Resize(this->Length + Multiplier.Length, false);
+			for (size_t i = 0; i < Product.Capacity; i++)
+				Product.Digits[i] = 0;
 
 
 			//Initialize X & Y such that X.Length >= Y.Length
 			const BCDInteger *X, *Y;
-			if (this->Length >= n.Length)
+			if (this->Length >= Multiplier.Length)
 			{
 				X = this;
-				Y = &n;
+				Y = &Multiplier;
 			}
 			else
 			{
-				X = &n;
+				X = &Multiplier;
 				Y = this;
 			}
 
@@ -379,9 +379,9 @@ namespace VedicMathLibrary
 				char Ch;
 				for (size_t start = 0, end = i; start <= i; ++start, --end)
 				{
-					Ch = X->at(start) * Y->at(end) + Product->Digits[j];
-					Product->Digits[j] = Ch % 10;
-					Product->Digits[j + 1] += Ch / 10;
+					Ch = X->at(start) * Y->at(end) + Product.Digits[j];
+					Product.Digits[j] = Ch % 10;
+					Product.Digits[j + 1] += Ch / 10;
 				}
 
 				++j;
@@ -396,30 +396,19 @@ namespace VedicMathLibrary
 				char Ch;
 				for (size_t start = i, end = MaxLength - 1; start < MaxLength; ++start, --end)
 				{
-					Ch = X->at(start) * Y->at(end) + Product->Digits[j];
-					Product->Digits[j] = Ch % 10;
-					Product->Digits[j + 1] += Ch / 10;
+					Ch = X->at(start) * Y->at(end) + Product.Digits[j];
+					Product.Digits[j] = Ch % 10;
+					Product.Digits[j + 1] += Ch / 10;
 				}
 
 				++j;
 			}
 
 
-			//Save Product Length
-			if (Product->Digits[j] == 0)
-				Product->Length = j;
-			else
-				Product->Length = j + 1;
-
 			//Set Proper Sign
-			if ((this->Positive && n.Positive) || (!this->Positive && !n.Positive))
-				Product->Positive = true;
-			else
-				Product->Positive = false;
+			Product.Positive = ((this->Positive && Multiplier.Positive) || (!this->Positive && !Multiplier.Positive));
 
-
-			//Return result
-			return Product;
+			Product.Normalize();
 		}
 		BCDInteger* VedicDivision(const BCDInteger& diviser)const
 		{
