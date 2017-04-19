@@ -11,10 +11,28 @@ using namespace std;
 
 
 
+//srand() should have been called already
+string GenerateRandomNumberString(int MaxLen)
+{
+	int Len = rand() % MaxLen + 1;
+	string Number;
+
+	int Digit = rand() % 9 + 1;
+	Number.append(to_string(Digit));
+
+
+	for (int i = 0; i < Len; i++)
+	{
+		Digit = rand() % 10;
+		Number.append(to_string(Digit));
+	}
+
+	return Number;
+}
 
 void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& AvgVedic, UINT64& AvgTraditional, size_t Cycles = 10000)
 {
-	BCDInteger a(StrA), b(StrB), q, r, *Result;
+	BCDInteger a(StrA), b(StrB), q, r;
 	//cpp_int b_a(StrA), b_b(StrB),b_c;
 	UINT64 CyclesAfterTask, CyclesBeforeTask, Sum;
 	
@@ -29,9 +47,11 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 		
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
 
-		cout << "\n";
+		cout << "\n[Q = ";
 		q.Print();
-
+		cout << "][R = ";
+		r.Print();
+		cout << "]";
 	}
 
 	AvgTraditional = (Sum / Cycles);
@@ -40,23 +60,24 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
-		Result = a.VedicDivision(b);
+		a.VedicDivision(b,q,r);
 		QueryThreadCycleTime(ThreadHandle, &CyclesAfterTask);
 
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
 
-		cout << "\n";
-		Result->Print();
 
-		delete Result;
+		cout << "\n[Q = ";
+		q.Print();
+		cout << "][R = ";
+		r.Print();
+		cout << "]";
 	}
 
 	AvgVedic = (Sum / Cycles);
 }
 void RunTests(string ResultFileName, size_t MaxLength)
 {
-	string StrA("3646474"), StrB("126");
-	srand((unsigned)time(NULL));
+	string StrA("3646474"), StrB("726"), Ra, Rb;
 
 	HANDLE Th = GetCurrentThread();
 	UINT64 AvgVedic = 0, AvgTraditional = 0;
@@ -66,8 +87,8 @@ void RunTests(string ResultFileName, size_t MaxLength)
 	if (File)
 	{
 		File << "Number Size,Vedic Math,Traditional" << endl;
-
-		while (StrA.length() < MaxLength)
+		int i = 0;
+		while (i++ < MaxLength)
 		{
 			//Append random digit
 			int digit = rand() % 10;
@@ -75,11 +96,14 @@ void RunTests(string ResultFileName, size_t MaxLength)
 			//digit = rand() % 10;
 			//StrB.append(to_string(digit));
 
-			cout << "\nRunning Test with Length: " << StrA.length();
+			Ra = GenerateRandomNumberString(MaxLength);
+			Rb = GenerateRandomNumberString(MaxLength);
 			
-			cout << "[A = " << StrA << "][B = " << StrB << "]";
+			//cout << "\nRunning Test with Length: " << StrA.length();
+			
+			cout << "\n[A = " << Ra << "][B = " << Rb << "]";
 
-			RunSingleTest(StrA, StrB, Th, AvgVedic, AvgTraditional, 1);
+			RunSingleTest(Ra, Rb, Th, AvgVedic, AvgTraditional, 1);
 
 			cout << "  Tr: " << AvgTraditional << "  , VEd: " << AvgVedic;
 		
@@ -96,11 +120,11 @@ void RunTests(string ResultFileName, size_t MaxLength)
 
 void Temp()
 {
-	BCDInteger a("3646474104"), b("846387");
+	BCDInteger a("3646474104"), b("846387"), q,r;
 
-	BCDInteger* c = a.VedicDivision(b);
+	a.VedicDivision(b,q,r);
 
-	c->Print();
+	q.Print();
 	
 	cout << "\n";
 	//c = a.TraditionalDivision(b);
@@ -111,6 +135,8 @@ void Temp()
 
 int main()
 {
+	srand((unsigned)time(NULL));
+
 	RunTests("QuotientTestResult", 50);
 	
 	//Temp();

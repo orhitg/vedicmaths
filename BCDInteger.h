@@ -410,20 +410,31 @@ namespace VedicMathLibrary
 
 			Product.Normalize();
 		}
-		BCDInteger* VedicDivision(const BCDInteger& Divisor)const
+		void VedicDivision(const BCDInteger& Divisor, BCDInteger& Quotient, BCDInteger& Remainder)const
 		{
-			//Split Diviser         
+			//Check if Divisor is Zero
+			if (Divisor.Length == 1 && Divisor.Digits[0] == 0)
+				throw exception("Invalid Operation! Divison by zero.");
 
+			//Check if Diviser is of longer than this
+			if (this->Length < Divisor.Length)
+			{
+				Quotient.Clear();
+				Remainder = (*this);
+				return;
+			}
+
+			//Split Diviser 
 			char  DiviserDigit = Divisor.Digits[Divisor.Length - 1];
 			char* FlagDigits = Divisor.Digits;
 			size_t FlagDigitCount = Divisor.Length - 1;
 
 			//If DiviserDigit is less then 5 then take another digit with it
-			if ((DiviserDigit < 5) && (Divisor.Length>1))
-			{
-				DiviserDigit = DiviserDigit * 10 + Divisor.Digits[Divisor.Length - 2];
-				--FlagDigitCount;
-			}
+			//if ((DiviserDigit < 5) && (Divisor.Length>1))
+			//{
+			//	DiviserDigit = DiviserDigit * 10 + Divisor.Digits[Divisor.Length - 2];
+			//	--FlagDigitCount;
+			//}
 			
 			//Split Dividend
 			char* RemainderDigits = this->Digits;
@@ -433,11 +444,9 @@ namespace VedicMathLibrary
 			const size_t QuotientDigitCount = this->Length - RemainderDigitcount;
 
 			//Quotient
-			BCDInteger *Q = new BCDInteger(QuotientDigitCount);
-			Q->Length = Q->Capacity;
+			Quotient.Resize(QuotientDigitCount, false);
+			Quotient.Length = Quotient.Capacity;
 
-			//Remainder
-			BCDInteger *R = new BCDInteger();
 
 			//Indices
 			size_t i = QuotientDigitCount - 1,
@@ -454,8 +463,9 @@ namespace VedicMathLibrary
 				{
 					if (i == NPOS)
 					{
-						VedicRemainder(FlagDigits, FlagDigitCount, Q->Digits, Q->Length, RemainderDigits, RemainderDigitcount, r, R);
-						if (R->Positive)
+						VedicRemainder(FlagDigits, FlagDigitCount, Quotient.Digits, Quotient.Length, RemainderDigits, RemainderDigitcount, 
+							           r, &Remainder);
+						if (Remainder.Positive)
 							Run = false;
 						else
 						{
@@ -469,16 +479,16 @@ namespace VedicMathLibrary
 						r = ED % DiviserDigit;
 
 						--i;
-						Q->Digits[--j] = q;
+						Quotient.Digits[--j] = q;
 					}
 				}
 				else
 				{
-					if (Q->Digits[j] == 0) //Backtracking
+					if (Quotient.Digits[j] == 0) //Backtracking
 					{
 						++j;
 						++i;
-						long T = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Q->Digits + j, QuotientDigitCount - j);
+						long T = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j);
 						r += T;
 						r /= 10;
 
@@ -489,7 +499,7 @@ namespace VedicMathLibrary
 					}
 					else
 					{
-						--(Q->Digits[j]);
+						--(Quotient.Digits[j]);
 						r += DiviserDigit;
 
 						if (i == NPOS)
@@ -497,10 +507,10 @@ namespace VedicMathLibrary
 					}
 				}
 
-				//Cross Multiply Q & FlagDigits
+				//Cross Multiply Quotient & FlagDigits
 				if (i != NPOS)
 				{
-					T1 = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Q->Digits + j, QuotientDigitCount - j);
+					T1 = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j);
 
 					T2 = r * 10 + QuotientDigits[i];
 					ED = T2 - T1;
@@ -509,13 +519,12 @@ namespace VedicMathLibrary
 			}
 
 			//Set Proper Sign
-			if ((this->Positive && Divisor.Positive) || (!this->Positive && !Divisor.Positive))
-				Q->Positive = true;
-			else
-				Q->Positive = false;
+			Quotient.Positive  = ((this->Positive && Divisor.Positive) || (!this->Positive && !Divisor.Positive));
+			Remainder.Positive = ((this->Positive && Divisor.Positive) || (this->Positive && !Divisor.Positive));
 
-
-			return Q;
+			//Normalize
+			Quotient.Normalize();
+			Remainder.Normalize();
 		}
 
 		#pragma endregion
@@ -554,6 +563,18 @@ namespace VedicMathLibrary
 		}
 		void TraditionalDivision(const BCDInteger& Divisor, BCDInteger& Quotient, BCDInteger& Remainder )const
 		{
+			//Check if Divisor is Zero
+			if (Divisor.Length == 1 && Divisor.Digits[0] == 0)
+				throw exception("Invalid Operation! Divison by zero.");
+
+			//Check if Diviser is of longer than this
+			if (this->Length < Divisor.Length)
+			{
+				Quotient.Clear();
+				Remainder = (*this);
+				return;
+			}
+
 			//Calculate digits in Quotient
 			size_t QuotientDigitCount = (this->Length - Divisor.Length) + 1;
 
