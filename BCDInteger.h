@@ -273,9 +273,8 @@ namespace VedicMathLibrary
 
 			//Step 2:Prepare Storage for Cross-Product of flagDigits and qDigits
 			//       Also reserve space for Zeros added by multiplication of 10
-			size_t MinDigitCount = (flagDigitCount < qDigitCount) ? flagDigitCount : qDigitCount;
-			size_t CrossProductCapacity = MinDigitCount + 2;
-			size_t Tm = MinDigitCount;
+			size_t CrossProductCapacity = flagDigitCount + 2;
+			size_t Tm = flagDigitCount;
 			while (Tm > 0)
 			{
 				CrossProductCapacity++;
@@ -284,7 +283,7 @@ namespace VedicMathLibrary
 			char* CrossProduct = new char[CrossProductCapacity];
 
 			//Step 3: Calculate remainder
-			for (size_t x = MinDigitCount - 1; x != NPOS; --x)
+			for (size_t x = flagDigitCount - 1; x != NPOS; --x)
 			{
 				for (size_t i = 0; i < CrossProductCapacity; i++)          //Zero-Out Storage
 					CrossProduct[i] = 0;
@@ -292,7 +291,7 @@ namespace VedicMathLibrary
 				//SubStep 1: Calculate Cross Product
 				size_t CrossProductLength = 0, k;
 				char   T = 0, Carry = 0;
-				for (size_t i = 0, j = x + (flagDigitCount - MinDigitCount); i <= x; i++, --j)
+				for (size_t i = 0, j = x; i <= x && i < qDigitCount; i++, --j)
 				{
 					T = flagDigits[j] * qDigits[i];
 					k = x;

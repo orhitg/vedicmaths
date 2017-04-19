@@ -47,11 +47,13 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 		
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
 
+		/*
 		cout << "\n[Q = ";
 		q.Print();
 		cout << "][R = ";
 		r.Print();
 		cout << "]";
+		*/
 	}
 
 	AvgTraditional = (Sum / Cycles);
@@ -66,11 +68,14 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
 
 
+		/*
 		cout << "\n[Q = ";
 		q.Print();
 		cout << "][R = ";
 		r.Print();
 		cout << "]";
+
+		*/
 	}
 
 	AvgVedic = (Sum / Cycles);
@@ -103,7 +108,7 @@ void RunTests(string ResultFileName, size_t MaxLength)
 			
 			cout << "\n[A = " << Ra << "][B = " << Rb << "]";
 
-			RunSingleTest(Ra, Rb, Th, AvgVedic, AvgTraditional, 1);
+			RunSingleTest(Ra, Rb, Th, AvgVedic, AvgTraditional);
 
 			cout << "  Tr: " << AvgTraditional << "  , VEd: " << AvgVedic;
 		
