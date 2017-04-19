@@ -410,21 +410,21 @@ namespace VedicMathLibrary
 
 			Product.Normalize();
 		}
-		BCDInteger* VedicDivision(const BCDInteger& diviser)const
+		BCDInteger* VedicDivision(const BCDInteger& Divisor)const
 		{
 			//Split Diviser         
 
-			char  DiviserDigit = diviser.Digits[diviser.Length - 1];
-			char* FlagDigits = diviser.Digits;
-			size_t FlagDigitCount = diviser.Length - 1;
+			char  DiviserDigit = Divisor.Digits[Divisor.Length - 1];
+			char* FlagDigits = Divisor.Digits;
+			size_t FlagDigitCount = Divisor.Length - 1;
 
 			//If DiviserDigit is less then 5 then take another digit with it
-			if ((DiviserDigit < 5) && (diviser.Length>1))
+			if ((DiviserDigit < 5) && (Divisor.Length>1))
 			{
-				DiviserDigit = DiviserDigit * 10 + diviser.Digits[diviser.Length - 2];
+				DiviserDigit = DiviserDigit * 10 + Divisor.Digits[Divisor.Length - 2];
 				--FlagDigitCount;
 			}
-
+			
 			//Split Dividend
 			char* RemainderDigits = this->Digits;
 			const size_t RemainderDigitcount = FlagDigitCount;
@@ -509,7 +509,7 @@ namespace VedicMathLibrary
 			}
 
 			//Set Proper Sign
-			if ((this->Positive && diviser.Positive) || (!this->Positive && !diviser.Positive))
+			if ((this->Positive && Divisor.Positive) || (!this->Positive && !Divisor.Positive))
 				Q->Positive = true;
 			else
 				Q->Positive = false;
@@ -552,10 +552,10 @@ namespace VedicMathLibrary
 
 			Product.Normalize();
 		}
-		void TraditionalDivision(const BCDInteger& Diviser, BCDInteger& Quotient, BCDInteger& Remainder )const
+		void TraditionalDivision(const BCDInteger& Divisor, BCDInteger& Quotient, BCDInteger& Remainder )const
 		{
 			//Calculate digits in Quotient
-			size_t QuotientDigitCount = (this->Length - Diviser.Length) + 1;
+			size_t QuotientDigitCount = (this->Length - Divisor.Length) + 1;
 
 			//Create space to hold Quotient
 			Quotient.Resize(QuotientDigitCount, false);
@@ -566,10 +566,10 @@ namespace VedicMathLibrary
 			Remainder = (*this);
 			char *EDOriginalArray = Remainder.Digits;
 			Remainder.Digits = (Remainder.Digits + QuotientDigitCount) - 1;
-			Remainder.Length = Diviser.Length;
+			Remainder.Length = Divisor.Length;
 
 			//Create Space to hold result of multiplication between Guess and divise
-			BCDInteger MultiResult(Diviser.Length + 1);
+			BCDInteger MultiResult(Divisor.Length + 1);
 
 			//Other variables
 			char Guess = 0, Carry = 0, T;
@@ -583,11 +583,11 @@ namespace VedicMathLibrary
 				//Guess
 				if (CreateNewGuess)
 				{
-					T = Remainder[Diviser.Length - 1];
-					if (Remainder.Length > Diviser.Length)
-						T += 10 * Remainder[Diviser.Length];
+					T = Remainder[Divisor.Length - 1];
+					if (Remainder.Length > Divisor.Length)
+						T += 10 * Remainder[Divisor.Length];
 
-					Guess = T / Diviser.Digits[Diviser.Length - 1];
+					Guess = T / Divisor.Digits[Divisor.Length - 1];
 					if (Guess > 9)
 						Guess = 9;
 				}
@@ -596,18 +596,18 @@ namespace VedicMathLibrary
 
 				//Multiplication
 				Carry = 0;
-				for (k = 0; k < Diviser.Length; k++)
+				for (k = 0; k < Divisor.Length; k++)
 				{
-					T = Diviser.Digits[k] * Guess + Carry;
+					T = Divisor.Digits[k] * Guess + Carry;
 					Carry = T / 10;
 					MultiResult.Digits[k] = T % 10;
 				}
 				MultiResult.Digits[k] = Carry;
 
 				if (Carry > 0)
-					MultiResult.Length = Diviser.Length + 1;
+					MultiResult.Length = Divisor.Length + 1;
 				else
-					MultiResult.Length = Diviser.Length;
+					MultiResult.Length = Divisor.Length;
 
 				//Ensure Mutiplication result is less then ED
 				if (Remainder < MultiResult)
@@ -639,8 +639,8 @@ namespace VedicMathLibrary
 			Remainder.Digits = EDOriginalArray;
 
 			//Set Proper Sign
-			Quotient.Positive  = ((this->Positive && Diviser.Positive) || (!this->Positive && !Diviser.Positive));
-			Remainder.Positive = ((this->Positive && Diviser.Positive) || (this->Positive && !Diviser.Positive));
+			Quotient.Positive  = ((this->Positive && Divisor.Positive) || (!this->Positive && !Divisor.Positive));
+			Remainder.Positive = ((this->Positive && Divisor.Positive) || (this->Positive && !Divisor.Positive));
 
 			//Normalize
 			Quotient.Normalize();
