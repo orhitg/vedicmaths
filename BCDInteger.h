@@ -534,12 +534,12 @@ namespace VedicMathLibrary
 
 		#pragma region Traditional Methods
 		public:
-		BCDInteger* TraditionalMultiplication(const BCDInteger& multiplier)const
+		void TraditionalMultiplication(const BCDInteger& multiplier, BCDInteger& Product)const
 		{
-			BCDInteger *Product = new BCDInteger(this->Length + multiplier.Length);
+			Product.Resize(this->Length + multiplier.Length, false);
 
-			for (size_t i = 0; i < Product->Capacity; i++)
-				Product->Digits[i] = 0;
+			for (size_t i = 0; i < Product.Capacity; i++)
+				Product.Digits[i] = 0;
 
 			size_t Shift = 0, Carry = 0, i, j;
 
@@ -548,28 +548,20 @@ namespace VedicMathLibrary
 				Carry = 0;
 				for (j = 0; j < this->Length; j++)
 				{
-					char M = this->Digits[j] * multiplier.Digits[i] + Product->Digits[Shift + j] + Carry;
+					char M = this->Digits[j] * multiplier.Digits[i] + Product.Digits[Shift + j] + Carry;
 					Carry = M / 10;
-					Product->Digits[Shift + j] = M % 10;
+					Product.Digits[Shift + j] = M % 10;
 
 				}
-				Product->Digits[Shift + j] = Carry;
+				Product.Digits[Shift + j] = Carry;
 
 				++Shift;
 			}
 
-			if (Carry == 0)
-				Product->Length = Product->Capacity - 1;
-			else
-				Product->Length = Product->Capacity;
+			//Set proper sign
+			Product.Positive = ((this->Positive && multiplier.Positive) || (!this->Positive && !multiplier.Positive));				
 
-
-			if ((this->Positive && multiplier.Positive) || (!this->Positive && !multiplier.Positive))
-				Product->Positive = true;
-			else
-				Product->Positive = false;
-
-			return Product;
+			Product.Normalize();
 		}
 		void TraditionalDivision(const BCDInteger& diviser, BCDInteger& quotient, BCDInteger& remainder )const
 		{
