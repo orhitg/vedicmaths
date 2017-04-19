@@ -61,8 +61,30 @@ namespace VedicMathLibrary
 		#pragma endregion
 
 
-		#pragma region Private Methods
-		private:
+		#pragma region Public Utility Methods
+		public:
+		bool IsPositive() const { return Positive; }
+		size_t GetCapacity() const { return Capacity; }
+		size_t GetLength() const { return Length; }
+
+		char& operator[](size_t i) { return Digits[i]; }
+		char  at(size_t i)const
+		{
+			if (i < Length)
+				return Digits[i];
+			else
+				return 0;
+		}
+		
+		void Print()
+		{
+			if (this->Positive == false)
+				cout << '-';
+
+			for (size_t i = 1; i <= this->Length; i++)
+				cout << char(this->Digits[this->Length - i] + '0');
+
+		}
 		void Resize(size_t newCapacity, bool keepOldData)
 		{
 			//If current capacity is already sufficient then return immediately
@@ -92,65 +114,35 @@ namespace VedicMathLibrary
 			if (OldDigits != NULL)
 				delete[] OldDigits;
 		}
-		void CrossMultiply(const BCDInteger& a, const BCDInteger& b, size_t startIndex, size_t endIndex, BCDInteger& result)const
+		void Swap(BCDInteger& target)
 		{
-			if (startIndex <= endIndex)
-			{
-				//Clear result
-				//result.Length = 0;
-
-				char Ch;
-				static BCDInteger Temp(2);
-
-				//Calculate result
-				for (size_t i = startIndex, j = endIndex; i <= endIndex; i++, j--)
-				{
-					Ch = (a.at(i) * b.at(j));
-
-					if (Ch == 0)
-						Temp.Length = 0;
-					else
-						if (Ch < 10)
-						{
-							Temp.Length = 1;
-							Temp.Digits[0] = Ch;
-						}
-						else
-						{
-							Temp.Length = 2;
-							Temp.Digits[0] = Ch % 10;
-							Temp.Digits[1] = Ch / 10;
-						}
-
-					result += Temp;
-				}
-			}
-			else
-				throw exception("startIndex is greater then endIndex");
+			std::swap(this->Length, target.Length);
+			std::swap(this->Capacity, target.Capacity);
+			std::swap(this->Positive, target.Positive);
+			std::swap(this->Digits, target.Digits);
 		}
-
-		#pragma endregion
-
-
-		#pragma region Accessors
-		public:
-		bool IsPositive() const { return Positive; }
-		size_t GetCapacity() const { return Capacity; }
-		size_t GetLength() const { return Length; }
-
-		char& operator[](size_t i) { return Digits[i]; }
-		char  at(size_t i)const
+		void Clear()
 		{
-			if (i < Length)
-				return Digits[i];
-			else
-				return 0;
+			if (Digits != NULL)
+				delete[] Digits;
+			Length = 0;
+			Capacity = 0;
+			this->Positive = true;
+		}
+		void Normalize()
+		{
+			while (Length > 0 && Digits[Length - 1] == 0)
+				--Length;
+
+			if (Length == 1 && Digits[0] == 0)
+				this->Positive = true;
 		}
 		#pragma endregion
 
 
 		#pragma region Overloaded Operators
 		public:
+		//Comparision
 		bool        operator==(const BCDInteger& other)const
 		{
 			//First check if Length can determine equality
@@ -188,6 +180,7 @@ namespace VedicMathLibrary
 			return (this->operator<(other)) || (this->operator==(other));
 		}
 
+		//Assignment
 		BCDInteger& operator=(const BCDInteger& source)
 		{
 			//Resize if necessery
@@ -203,6 +196,8 @@ namespace VedicMathLibrary
 			//Return a reference to this object to allow chaining of = operator
 			return *this;
 		}
+
+		//Mathematical
 		BCDInteger& operator+=(const BCDInteger& n)
 		{
 			//Resize if necessery
@@ -242,17 +237,114 @@ namespace VedicMathLibrary
 		#pragma endregion
 
 
-		#pragma region Public Methods
-		public:
-		void Print()
+		#pragma region Vedic Methods
+		private:
+		long VedicQuotientCrossMulti(char* flagDigits, size_t flagDigitCount, char* quotientDigits, size_t quotientDigitCount)const
 		{
-			if (this->Positive == false)
-				cout << '-';
+			long Result = 0;
+			size_t MinCount = flagDigitCount < quotientDigitCount ? flagDigitCount : quotientDigitCount;
 
-			for (size_t i = 1; i <= this->Length; i++)
-				cout << char(this->Digits[this->Length - i] + '0');
+			for (size_t i = 0, j = flagDigitCount - 1; i < MinCount; i++, j--)
+				Result += (flagDigits[j] * quotientDigits[i]);
+
+			return Result;
+		}
+		void VedicRemainder(const char* flagDigits, size_t flagDigitCount, const char* qDigits, size_t qDigitCount,
+			const char* remainderDigits, size_t remainderDigitCount, long r, BCDInteger* result)const
+		{
+			//Set result as negative so that we can simply return to signify a failure
+			result->Positive = false;
+
+
+			//Step 1: Prepare storage for Remainder
+			result->Resize(remainderDigitCount + 3, false);
+			for (size_t j = 0; j < remainderDigitCount; j++)
+				result->Digits[j] = remainderDigits[j];
+
+			result->Length = remainderDigitCount;
+
+			long Tr = r;
+			while (Tr > 0)
+			{
+				result->Digits[result->Length++] = Tr % 10;
+				Tr = Tr / 10;
+			}
+
+
+			//Step 2:Prepare Storage for Cross-Product of flagDigits and qDigits
+			//       Also reserve space for Zeros added by multiplication of 10
+			size_t MinDigitCount = (flagDigitCount < qDigitCount) ? flagDigitCount : qDigitCount;
+			size_t CrossProductCapacity = MinDigitCount + 2;
+			size_t Tm = MinDigitCount;
+			while (Tm > 0)
+			{
+				CrossProductCapacity++;
+				Tm = Tm / 10;
+			}
+			char* CrossProduct = new char[CrossProductCapacity];
+
+			//Step 3: Calculate remainder
+			for (size_t x = MinDigitCount - 1; x != NPOS; --x)
+			{
+				for (size_t i = 0; i < CrossProductCapacity; i++)          //Zero-Out Storage
+					CrossProduct[i] = 0;
+
+				//SubStep 1: Calculate Cross Product
+				size_t CrossProductLength = 0, k;
+				char   T = 0, Carry = 0;
+				for (size_t i = 0, j = x + (flagDigitCount - MinDigitCount); i <= x; i++, --j)
+				{
+					T = flagDigits[j] * qDigits[i];
+					k = x;
+
+					while (T > 0 || Carry > 0)
+					{
+						CrossProduct[k] += (T % 10 + Carry);
+						Carry = CrossProduct[k] / 10;
+
+						CrossProduct[k] %= 10;
+						T /= 10;
+
+						++k;
+					}
+
+					if (k > CrossProductLength)
+						CrossProductLength = k;
+				}
+
+
+				//If CrossProductLength is greater than result's length then remainder is 
+				//negative and we should return
+				if (CrossProductLength > result->Length)
+					return;
+
+				//SubStep 2: Subtract CrossProduct from Remainder(result)
+				Carry = 1;
+				for (size_t i = 0; i < CrossProductLength; i++)
+				{
+					T = result->Digits[i] + (9 - CrossProduct[i]) + Carry;
+					result->Digits[i] = T % 10;
+					Carry = T / 10;
+				}
+				for (size_t i = CrossProductLength; i < result->Length; i++)
+				{
+					T = result->Digits[i] + 9 + Carry;
+					result->Digits[i] = T % 10;
+					Carry = T / 10;
+				}
+
+				//If Carry == 0 then result is negative
+				if (Carry == 0)
+					return;
+
+				//TODO: Trim result
+			}
+
+			result->Positive = true;
+			return;
 		}
 
+		public:
 		BCDInteger* VedicMultiplication(const BCDInteger& n)const
 		{
 			size_t MaxLength = (this->Length > n.Length) ? this->Length : n.Length;
@@ -329,160 +421,20 @@ namespace VedicMathLibrary
 			//Return result
 			return Product;
 		}
-		BCDInteger* TraditionalMultiplication(const BCDInteger& n)const
-		{
-			BCDInteger *Product = new BCDInteger(this->Length + n.Length);
-
-			for (size_t i = 0; i < Product->Capacity; i++)
-				Product->Digits[i] = 0;
-
-			size_t Shift = 0, Carry = 0, i, j;
-
-			for (i = 0; i < n.Length; i++)
-			{
-				Carry = 0;
-				for (j = 0; j < this->Length; j++)
-				{
-					char M = this->Digits[j] * n.Digits[i] + Product->Digits[Shift + j] + Carry;
-					Carry = M / 10;
-					Product->Digits[Shift + j] = M % 10;
-
-				}
-				Product->Digits[Shift + j] = Carry;
-
-				++Shift;
-			}
-
-			if (Carry == 0)
-				Product->Length = Product->Capacity - 1;
-			else
-				Product->Length = Product->Capacity;
-
-
-			if ((this->Positive && n.Positive) || (!this->Positive && !n.Positive))
-				Product->Positive = true;
-			else
-				Product->Positive = false;
-
-			return Product;
-		}
-
-
-		long VedicQuotientCrossMulti(char* flagDigits, size_t flagDigitCount, char* quotientDigits, size_t quotientDigitCount)const
-		{
-			long Result = 0;
-			size_t MinCount = flagDigitCount < quotientDigitCount ? flagDigitCount : quotientDigitCount;
-
-			for (size_t i = 0, j = MinCount - 1; i < MinCount; i++, j--)
-				Result += (flagDigits[i] * quotientDigits[j]);
-
-			return Result;
-		}
-
-
-
-		void VedicRemainder(const char* flagDigits, size_t flagDigitCount, const char* qDigits, size_t qDigitCount,
-			                const char* remainderDigits, size_t remainderDigitCount, long r, BCDInteger* result)const 
-		{
-			//Set result as negative so that we can simply return to signify a failure
-			result->Positive = false;
-
-
-			//Step 1: Prepare storage for Remainder
-			result->Resize(remainderDigitCount + 3, false);			
-			for (size_t j = 0; j < remainderDigitCount; j++)
-				result->Digits[j] = remainderDigits[j];
-			
-			result->Length = remainderDigitCount;
-
-			long Tr = r;
-			while (Tr > 0)
-			{
-				result->Digits[result->Length++] = Tr % 10;
-				Tr = Tr / 10;
-			}
-
-			
-			//Step 2:Prepare Storage for Cross-Product of flagDigits and qDigits
-			//       Also reserve space for Zeros added by multiplication of 10
-			size_t MinDigitCount = (flagDigitCount < qDigitCount) ? flagDigitCount : qDigitCount;
-			size_t CrossProductCapacity = MinDigitCount + 2;
-			size_t Tm = MinDigitCount;
-			while (Tm > 0)
-			{
-				CrossProductCapacity++;
-				Tm = Tm / 10;
-			}
-			char* CrossProduct = new char[CrossProductCapacity];
-
-			//Step 3: Calculate remainder
-			for (size_t x = MinDigitCount-1; x!= NPOS; --x)
-			{
-				for (size_t i = 0; i < CrossProductCapacity; i++)          //Zero-Out Storage
-					CrossProduct[i] = 0;
-
-				//SubStep 1: Calculate Cross Product
-				size_t CrossProductLength = 0, k;
-				char   T = 0, Carry = 0;
-				for (size_t i = 0, j = x; i <= x; i++, --j)
-				{
-					T = flagDigits[i] * qDigits[j];
-					k = x;
-
-					while (T > 0 || Carry > 0)
-					{
-						CrossProduct[k] += (T % 10 + Carry);
-						Carry = CrossProduct[k] / 10;
-						
-						CrossProduct[k] %= 10;
-						T /= 10;
-
-						++k;
-					} 
-
-					if (k > CrossProductLength)
-						CrossProductLength = k;
-				}
-				
-
-				//If CrossProductLength is greater than result's length then remainder is 
-				//negative and we should return
-				if (CrossProductLength > result->Length)
-					return;
-			
-				//SubStep 2: Subtract CrossProduct from Remainder(result)
-				Carry = 1;				
-				for (size_t i = 0; i < CrossProductLength; i++)
-				{
-					T = result->Digits[i] + (9 - CrossProduct[i]) + Carry;
-					result->Digits[i] = T % 10;
-					Carry = T / 10;
-				}
-				for (size_t i = CrossProductLength; i < result->Length; i++)
-				{
-					T = result->Digits[i] + 9 + Carry;
-					result->Digits[i] = T % 10;
-					Carry = T / 10;
-				}
-
-				//If Carry == 0 then result is negative
-				if (Carry == 0)
-					return;
-
-				//TODO: Trim result
-			}
-
-			result->Positive = true;
-			return;			
-		}
-
-		BCDInteger* VedicQuotient(const BCDInteger& diviser)const
+		BCDInteger* VedicDivision(const BCDInteger& diviser)const
 		{
 			//Split Diviser         
 
 			char  DiviserDigit = diviser.Digits[diviser.Length - 1];
 			char* FlagDigits = diviser.Digits;
-			const size_t FlagDigitCount = diviser.Length - 1;
+			size_t FlagDigitCount = diviser.Length - 1;
+
+			//If DiviserDigit is less then 5 then take another digit with it
+			if ((DiviserDigit < 5) && (diviser.Length>1))
+			{
+				DiviserDigit = DiviserDigit * 10 + diviser.Digits[diviser.Length - 2];
+				--FlagDigitCount;
+			}
 
 			//Split Dividend
 			char* RemainderDigits = this->Digits;
@@ -511,7 +463,7 @@ namespace VedicMathLibrary
 			{
 				if (ED >= 0)
 				{
-					if(i == NPOS)
+					if (i == NPOS)
 					{
 						VedicRemainder(FlagDigits, FlagDigitCount, Q->Digits, Q->Length, RemainderDigits, RemainderDigitcount, r, R);
 						if (R->Positive)
@@ -550,14 +502,14 @@ namespace VedicMathLibrary
 					{
 						--(Q->Digits[j]);
 						r += DiviserDigit;
-						
+
 						if (i == NPOS)
 							ED = 1;
 					}
 				}
 
 				//Cross Multiply Q & FlagDigits
-				if (i != NPOS) 
+				if (i != NPOS)
 				{
 					T1 = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Q->Digits + j, QuotientDigitCount - j);
 
@@ -577,7 +529,49 @@ namespace VedicMathLibrary
 			return Q;
 		}
 
-		BCDInteger* TraditionalQuotient(const BCDInteger& diviser)const
+		#pragma endregion
+
+
+		#pragma region Traditional Methods
+		public:
+		BCDInteger* TraditionalMultiplication(const BCDInteger& multiplier)const
+		{
+			BCDInteger *Product = new BCDInteger(this->Length + multiplier.Length);
+
+			for (size_t i = 0; i < Product->Capacity; i++)
+				Product->Digits[i] = 0;
+
+			size_t Shift = 0, Carry = 0, i, j;
+
+			for (i = 0; i < multiplier.Length; i++)
+			{
+				Carry = 0;
+				for (j = 0; j < this->Length; j++)
+				{
+					char M = this->Digits[j] * multiplier.Digits[i] + Product->Digits[Shift + j] + Carry;
+					Carry = M / 10;
+					Product->Digits[Shift + j] = M % 10;
+
+				}
+				Product->Digits[Shift + j] = Carry;
+
+				++Shift;
+			}
+
+			if (Carry == 0)
+				Product->Length = Product->Capacity - 1;
+			else
+				Product->Length = Product->Capacity;
+
+
+			if ((this->Positive && multiplier.Positive) || (!this->Positive && !multiplier.Positive))
+				Product->Positive = true;
+			else
+				Product->Positive = false;
+
+			return Product;
+		}
+		BCDInteger* TraditionalDivision(const BCDInteger& diviser, BCDInteger& quotient, BCDInteger& remainder )const
 		{
 			//Calculate digits in Quotient
 			size_t QuotientDigitCount = (this->Length - diviser.Length) + 1;

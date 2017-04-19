@@ -1,18 +1,21 @@
 
+
 #include<Windows.h>
 #include<cstdlib>
 #include<ctime>
 #include<fstream>
 #include"BCDInteger.h"
 
-
 using namespace VedicMathLibrary;
 using namespace std;
+
+
+
 
 void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& AvgVedic, UINT64& AvgTraditional, size_t Cycles = 10000)
 {
 	BCDInteger a(StrA), b(StrB), *Result;
-
+	//cpp_int b_a(StrA), b_b(StrB),b_c;
 	UINT64 CyclesAfterTask, CyclesBeforeTask, Sum;
 	
 	Sum = 0;
@@ -20,7 +23,8 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
-		Result = a.TraditionalQuotient(b);
+		Result = a.TraditionalDivision(b);
+		//b_c = b_a / b_b;
 		QueryThreadCycleTime(ThreadHandle, &CyclesAfterTask);
 		
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
@@ -37,7 +41,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 	for (size_t i = 0; i < Cycles; i++)
 	{
 		QueryThreadCycleTime(ThreadHandle, &CyclesBeforeTask);
-		Result = a.VedicQuotient(b);
+		Result = a.VedicDivision(b);
 		QueryThreadCycleTime(ThreadHandle, &CyclesAfterTask);
 
 		Sum += (CyclesAfterTask - CyclesBeforeTask);
@@ -52,7 +56,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 }
 void RunTests(string ResultFileName, size_t MaxLength)
 {
-	string StrA("3646474"), StrB("459");
+	string StrA("3646474"), StrB("126436575476575");
 	srand((unsigned)time(NULL));
 
 	HANDLE Th = GetCurrentThread();
@@ -72,9 +76,9 @@ void RunTests(string ResultFileName, size_t MaxLength)
 			//digit = rand() % 10;
 			//StrB.append(to_string(digit));
 
-			cout << "\n Running Test with Length: " << StrA.length();
+			cout << "\nRunning Test with Length: " << StrA.length();
 			
-			//cout << "[A = " << StrA << "][B = " << StrB << "]";
+			cout << "[A = " << StrA << "][B = " << StrB << "]";
 
 			RunSingleTest(StrA, StrB, Th, AvgVedic, AvgTraditional, 1);
 
@@ -93,18 +97,16 @@ void RunTests(string ResultFileName, size_t MaxLength)
 
 void Temp()
 {
-	BCDInteger a("446663543486987464354469897076"), b("668567474766587768705"), d("123"), e("50607");
+	BCDInteger a("3646474104"), b("846387");
 
-	BCDInteger* c = a.TraditionalQuotient(b);
+	BCDInteger* c = a.VedicDivision(b);
 
 	c->Print();
-
-	c = e.VedicQuotient(d);
-
+	
 	cout << "\n";
+	c = a.TraditionalDivision(b);
 
 	c->Print();
-
 }
 
 
