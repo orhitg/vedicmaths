@@ -53,7 +53,7 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 		cout << "][R = ";
 		r.Print();
 		cout << "]";
-		*/
+		//*/
 	}
 
 	AvgTraditional = (Sum / Cycles);
@@ -75,14 +75,14 @@ void RunSingleTest(string StrA, string StrB,const HANDLE& ThreadHandle, UINT64& 
 		r.Print();
 		cout << "]";
 
-		*/
+		//*/
 	}
 
 	AvgVedic = (Sum / Cycles);
 }
 void RunTests(string ResultFileName, size_t MaxLength)
 {
-	string StrA("3646474"), StrB("726"), Ra, Rb;
+	string StrA("39485849754357945803457"), StrB("72634759759645435"), Ra, Rb;
 
 	HANDLE Th = GetCurrentThread();
 	UINT64 AvgVedic = 0, AvgTraditional = 0;
@@ -106,9 +106,11 @@ void RunTests(string ResultFileName, size_t MaxLength)
 			
 			//cout << "\nRunning Test with Length: " << StrA.length();
 			
-			cout << "\n[A = " << Ra << "][B = " << Rb << "]";
+			//cout << "\n[A = " << Ra << "][B = " << Rb << "]";
 
-			RunSingleTest(Ra, Rb, Th, AvgVedic, AvgTraditional);
+			cout << "\n[A = " << StrA << "][B = " << StrB << "]";
+
+			RunSingleTest(StrA, StrB, Th, AvgVedic, AvgTraditional);
 
 			cout << "  Tr: " << AvgTraditional << "  , VEd: " << AvgVedic;
 		
@@ -142,7 +144,7 @@ int main()
 {
 	srand((unsigned)time(NULL));
 
-	RunTests("QuotientTestResult", 50);
+	RunTests("DivisionTestResult", 100);
 	
 	//Temp();
 
