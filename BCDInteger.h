@@ -157,6 +157,10 @@ namespace VedicMathLibrary
 			//If no mismatch found then return true
 			return true;
 		}
+		bool        operator!=(const BCDInteger& other)const
+		{
+			return (!(this->operator==(other)));
+		}
 		bool        operator<(const BCDInteger& other)const
 		{
 			//First check if Length can determine lesser
