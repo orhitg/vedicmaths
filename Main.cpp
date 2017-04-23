@@ -99,7 +99,7 @@ void RunTests(string ResultFileName, size_t MaxLength)
 	if (File)
 	{
 		File << "Number Size,Vedic Math,Traditional" << endl;
-		int i = 0;
+		size_t i = 0;
 		while (i++ < MaxLength)
 		{
 			//Append random digit
@@ -132,22 +132,9 @@ void RunTests(string ResultFileName, size_t MaxLength)
 	}
 }
 
-void Temp()
-{
-	BCDInteger a("3646474104"), b("846387"), q, r;
-
-	a.VedicDivision(b, q, r);
-
-	q.Print();
-
-	cout << "\n";
-	//c = a.TraditionalDivision(b);
-
-	//c->Print();
-}
 
 
-void RunRandomNumberTest(int MaxLen, size_t Cycles)
+void RunRandomNumberTest(size_t MaxLen, size_t Cycles)
 {
 	ifstream TestFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\TestFiles\\RandomNumbers_Set2.txt");
 	ofstream ResultFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\ResultFiles\\RandomNumbers_Set1.csv");
@@ -185,12 +172,28 @@ void RunRandomNumberTest(int MaxLen, size_t Cycles)
 }
 
 
+void Temp()
+{
+	BCDInteger a("71192"), b("356"), q, r;
+
+	a.VedicDivision(b, q, r);
+
+	q.Print();
+
+	cout << "\n";
+	//c = a.TraditionalDivision(b);
+
+	//c->Print();
+}
+
 
 int main()
 {
 	srand((unsigned)time(NULL));
 
-	RunRandomNumberTest(200, 1);
+	RunRandomNumberTest(200, 1000);
+
+	//Temp();
 
 	system("pause>nul");
 

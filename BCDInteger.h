@@ -243,13 +243,26 @@ namespace VedicMathLibrary
 
 		#pragma region Vedic Methods
 		private:
-		long VedicQuotientCrossMulti(char* flagDigits, size_t flagDigitCount, char* quotientDigits, size_t quotientDigitCount)const
+		long VedicQuotientCrossMulti(char* flagDigits, size_t flagDigitCount, char* quotientDigits, size_t quotientDigitCount,
+		                             bool breakOnNegativeED, long T1)const
 		{
 			long Result = 0;
 			size_t MinCount = flagDigitCount < quotientDigitCount ? flagDigitCount : quotientDigitCount;
 
-			for (size_t i = 0, j = flagDigitCount - 1; i < MinCount; i++, j--)
-				Result += (flagDigits[j] * quotientDigits[i]);
+			if (breakOnNegativeED)
+			{
+				for (size_t i = 0, j = flagDigitCount - 1; i < MinCount; i++, j--)
+				{
+					Result += (flagDigits[j] * quotientDigits[i]);
+					if (Result > T1)
+						break;
+				}
+			}
+			else
+			{
+				for (size_t i = 0, j = flagDigitCount - 1; i < MinCount; i++, j--)
+					Result += (flagDigits[j] * quotientDigits[i]);
+			}
 
 			return Result;
 		}
@@ -319,6 +332,9 @@ namespace VedicMathLibrary
 				//If CrossProductLength is greater than result's length then remainder is 
 				//negative and we should return
 				if (CrossProductLength > result->Length)
+					return;
+
+				if (CrossProduct[result->Length - 1] > result->Digits[result->Length - 1])
 					return;
 
 				//SubStep 2: Subtract CrossProduct from Remainder(result)
@@ -430,7 +446,13 @@ namespace VedicMathLibrary
 			//Split Diviser 
 			char  DiviserDigit = Divisor.Digits[Divisor.Length - 1];
 			char* FlagDigits = Divisor.Digits;
-			size_t FlagDigitCount = Divisor.Length - 1;
+			const size_t FlagDigitCount = Divisor.Length - 1;
+
+	//		if (DiviserDigit < 5 && Divisor.Length >= 2)
+			{
+		//		DiviserDigit = (DiviserDigit * 10) + Divisor.Digits[Divisor.Length - 2];
+			//	FlagDigitCount--;
+			}
 
 			//If DiviserDigit is less then 5 then take another digit with it
 			//if ((DiviserDigit < 5) && (Divisor.Length>1))
@@ -457,12 +479,12 @@ namespace VedicMathLibrary
 
 
 			//Effective Dividend                   
-			long ED = QuotientDigits[i], q = 0, r = 0, T1 = 0, T2 = 0;
+			int ED = QuotientDigits[i], q = 0, r = 0, T1 = 0, T2 = 0;
 
-			bool Run = true;
+			bool Run = true, DecreaseQuotient = false;
 			while (Run)
 			{
-				if (ED >= 0)
+				if (DecreaseQuotient == false)
 				{
 					if (i == NPOS)
 					{
@@ -472,7 +494,7 @@ namespace VedicMathLibrary
 							Run = false;
 						else
 						{
-							ED = -1;
+							DecreaseQuotient = true;
 							continue;
 						}
 					}
@@ -489,34 +511,54 @@ namespace VedicMathLibrary
 				{
 					if (Quotient.Digits[j] == 0) //Backtracking
 					{
+						//Move one step back
 						++j;
 						++i;
-						long T = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j);
+
+						//Calculate ED & r for this step 
+						long T = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j, false, 0);
 						r += T;
 						r /= 10;
 
-						//Change ED to a negative value so that in next iteration we again end up here
-						ED = -1;
+						ED = (r * 10 + QuotientDigits[i] - T);
+
+						//Schedule decrease in Quotient
+						DecreaseQuotient = true;
 						continue;
 
 					}
 					else
 					{
+						//Decrease Quotient
 						--(Quotient.Digits[j]);
-						r += DiviserDigit;
 
-						if (i == NPOS)
-							ED = 1;
+						//Update ED & r
+						r += DiviserDigit;
+						ED += (10 * DiviserDigit + FlagDigits[FlagDigitCount - 1]);
+
+						//Decide if we need further reduction
+						DecreaseQuotient = (ED < 0);
+
+						continue;
 					}
 				}
 
 				//Cross Multiply Quotient & FlagDigits
 				if (i != NPOS)
 				{
-					T1 = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j);
+					T1 = r * 10 + QuotientDigits[i];
+					T2 = 0;
+					
+					size_t MinCount = FlagDigitCount < (QuotientDigitCount-j) ? FlagDigitCount : (QuotientDigitCount-j);
+					char* QDigits = Quotient.Digits + j;
 
-					T2 = r * 10 + QuotientDigits[i];
-					ED = T2 - T1;
+					for (size_t m = 0, n = FlagDigitCount - 1; m < MinCount; m++, n--)
+						T2 += (FlagDigits[n] * QDigits[m]);
+					
+					ED = T1 - T2;
+
+					if (ED < 0)
+						DecreaseQuotient = true;
 				}
 
 			}
