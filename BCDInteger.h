@@ -324,12 +324,6 @@ namespace VedicMathLibrary
 				//negative and we should return
 				if (result->operator<(CrossProduct))
 					return;
-
-				//if (CrossProduct[result->Length - 1] > result->Digits[result->Length - 1])
-					//return;
-
-
-				//TODO: Trim result
 			}
 
 			//SubStep 2: Subtract CrossProduct from Remainder(result)
@@ -446,13 +440,6 @@ namespace VedicMathLibrary
 				FlagDigitCount--;
 			}
 
-			//If DiviserDigit is less then 5 then take another digit with it
-			//if ((DiviserDigit < 5) && (Divisor.Length>1))
-			//{
-			//	DiviserDigit = DiviserDigit * 10 + Divisor.Digits[Divisor.Length - 2];
-			//	--FlagDigitCount;
-			//}
-			
 			//Split Dividend
 			char* RemainderDigits = this->Digits;
 			const size_t RemainderDigitcount = FlagDigitCount;
