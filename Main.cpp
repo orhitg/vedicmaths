@@ -136,8 +136,8 @@ void RunTests(string ResultFileName, size_t MaxLength)
 
 void RunRandomNumberTest(size_t MaxLen, size_t Cycles)
 {
-	ifstream TestFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\TestFiles\\RandomNumbers_Set2.txt");
-	ofstream ResultFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\ResultFiles\\RandomNumbers_Set1.csv");
+	ifstream TestFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\TestFiles\\RandomNumbers_Set3.txt");
+	ofstream ResultFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\ResultFiles\\RandomNumbers_Set3.csv");
 
 	HANDLE Th = GetCurrentThread();
 	UINT64 AvgVedic = 0, AvgTraditional = 0;
@@ -151,16 +151,22 @@ void RunRandomNumberTest(size_t MaxLen, size_t Cycles)
 		//Take FirstNumber as divisor
 		TestFile >> Divisor;
 
+		ResultFile << "Size, Traditional, Vedic" << endl;
+
 		for (size_t i = Divisor.length(); i < MaxLen; i++)
 		{
 			TestFile >> Dividend;
 
 			if (!RunSingleTest(Dividend, Divisor, Th, AvgVedic, AvgTraditional, Cycles))
 			{
-				cout << "\nResult Mismatch!";
+				cout << "\nResult Mismatch!\n[A="<<Dividend<<"][B="<<Divisor;
+				
 			}
 
 			cout << "  Tr: " << AvgTraditional << "  , VEd: " << AvgVedic << endl;
+
+			ResultFile << Dividend.length() << "," << AvgTraditional << "," << AvgVedic;
+
 			S += (AvgTraditional - AvgVedic);
 		}
 
@@ -174,14 +180,29 @@ void RunRandomNumberTest(size_t MaxLen, size_t Cycles)
 
 void Temp()
 {
-	BCDInteger a("71192"), b("356"), q, r;
+	BCDInteger 
+		a("1166739413323874215601794898464527536197167356991178614276667454445594128426628765227157535300671034332788171214754436231740780110056561143927762347133102232584693155897291580159"),
+		b("26736038687930346029045807261129522095961671393420620767872553501499846701109304452513005"), q, r;
 
 	a.VedicDivision(b, q, r);
 
 	q.Print();
 
 	cout << "\n";
-	//c = a.TraditionalDivision(b);
+
+	r.Print();
+
+	cout << "\n";
+	
+	a.TraditionalDivision(b, q, r);
+
+	q.Print();
+
+	cout << "\n";
+
+	r.Print();
+
+	cout << "\n";//c = a.TraditionalDivision(b);
 
 	//c->Print();
 }
@@ -191,7 +212,7 @@ int main()
 {
 	srand((unsigned)time(NULL));
 
-	RunRandomNumberTest(200, 1000);
+	RunRandomNumberTest(200, 10000);
 
 	//Temp();
 

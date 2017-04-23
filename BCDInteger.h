@@ -243,27 +243,14 @@ namespace VedicMathLibrary
 
 		#pragma region Vedic Methods
 		private:
-		long VedicQuotientCrossMulti(char* flagDigits, size_t flagDigitCount, char* quotientDigits, size_t quotientDigitCount,
-		                             bool breakOnNegativeED, long T1)const
+		long VedicQuotientCrossMulti(char* flagDigits, size_t flagDigitCount, char* quotientDigits, size_t quotientDigitCount)const
 		{
 			long Result = 0;
 			size_t MinCount = flagDigitCount < quotientDigitCount ? flagDigitCount : quotientDigitCount;
 
-			if (breakOnNegativeED)
-			{
-				for (size_t i = 0, j = flagDigitCount - 1; i < MinCount; i++, j--)
-				{
+			for (size_t i = 0, j = flagDigitCount - 1; i < MinCount; i++, j--)
 					Result += (flagDigits[j] * quotientDigits[i]);
-					if (Result > T1)
-						break;
-				}
-			}
-			else
-			{
-				for (size_t i = 0, j = flagDigitCount - 1; i < MinCount; i++, j--)
-					Result += (flagDigits[j] * quotientDigits[i]);
-			}
-
+		
 			return Result;
 		}
 		void VedicRemainder(const char* flagDigits, size_t flagDigitCount, const char* qDigits, size_t qDigitCount,
@@ -297,17 +284,21 @@ namespace VedicMathLibrary
 				CrossProductCapacity++;
 				Tm = Tm / 10;
 			}
-			char* CrossProduct = new char[CrossProductCapacity];
+			static BCDInteger CrossProduct;
+			CrossProduct.Resize(CrossProductCapacity, false);
+			CrossProduct.Length = 0;
+
+			for (size_t i = 0; i < CrossProductCapacity; i++)          //Zero-Out Storage
+				CrossProduct.Digits[i] = 0;
+
+			//SubStep 1: Calculate Cross Product
+			size_t k;
+			char   T = 0, Carry = 0;
+
 
 			//Step 3: Calculate remainder
 			for (size_t x = flagDigitCount - 1; x != NPOS; --x)
 			{
-				for (size_t i = 0; i < CrossProductCapacity; i++)          //Zero-Out Storage
-					CrossProduct[i] = 0;
-
-				//SubStep 1: Calculate Cross Product
-				size_t CrossProductLength = 0, k;
-				char   T = 0, Carry = 0;
 				for (size_t i = 0, j = x; i <= x && i < qDigitCount; i++, --j)
 				{
 					T = flagDigits[j] * qDigits[i];
@@ -315,49 +306,50 @@ namespace VedicMathLibrary
 
 					while (T > 0 || Carry > 0)
 					{
-						CrossProduct[k] += (T % 10 + Carry);
-						Carry = CrossProduct[k] / 10;
+						CrossProduct.Digits[k] += (T % 10 + Carry);
+						Carry = CrossProduct.Digits[k] / 10;
 
-						CrossProduct[k] %= 10;
+						CrossProduct.Digits[k] %= 10;
 						T /= 10;
 
 						++k;
 					}
 
-					if (k > CrossProductLength)
-						CrossProductLength = k;
+					if (k > CrossProduct.Length)
+						CrossProduct.Length = k;
 				}
 
 
 				//If CrossProductLength is greater than result's length then remainder is 
 				//negative and we should return
-				if (CrossProductLength > result->Length)
+				if (result->operator<(CrossProduct))
 					return;
 
-				if (CrossProduct[result->Length - 1] > result->Digits[result->Length - 1])
-					return;
+				//if (CrossProduct[result->Length - 1] > result->Digits[result->Length - 1])
+					//return;
 
-				//SubStep 2: Subtract CrossProduct from Remainder(result)
-				Carry = 1;
-				for (size_t i = 0; i < CrossProductLength; i++)
-				{
-					T = result->Digits[i] + (9 - CrossProduct[i]) + Carry;
-					result->Digits[i] = T % 10;
-					Carry = T / 10;
-				}
-				for (size_t i = CrossProductLength; i < result->Length; i++)
-				{
-					T = result->Digits[i] + 9 + Carry;
-					result->Digits[i] = T % 10;
-					Carry = T / 10;
-				}
-
-				//If Carry == 0 then result is negative
-				if (Carry == 0)
-					return;
 
 				//TODO: Trim result
 			}
+
+			//SubStep 2: Subtract CrossProduct from Remainder(result)
+			Carry = 1;
+			for (size_t i = 0; i < CrossProduct.Length; i++)
+			{
+				T = result->Digits[i] + (9 - CrossProduct[i]) + Carry;
+				result->Digits[i] = T % 10;
+				Carry = T / 10;
+			}
+			for (size_t i = CrossProduct.Length; i < result->Length; i++)
+			{
+				T = result->Digits[i] + 9 + Carry;
+				result->Digits[i] = T % 10;
+				Carry = T / 10;
+			}
+
+			//If Carry == 0 then result is negative
+			if (Carry == 0)
+				return;
 
 			result->Positive = true;
 			return;
@@ -446,12 +438,12 @@ namespace VedicMathLibrary
 			//Split Diviser 
 			char  DiviserDigit = Divisor.Digits[Divisor.Length - 1];
 			char* FlagDigits = Divisor.Digits;
-			const size_t FlagDigitCount = Divisor.Length - 1;
+			size_t FlagDigitCount = Divisor.Length - 1;
 
-	//		if (DiviserDigit < 5 && Divisor.Length >= 2)
+			if (DiviserDigit == 1  && Divisor.Length >= 2)
 			{
-		//		DiviserDigit = (DiviserDigit * 10) + Divisor.Digits[Divisor.Length - 2];
-			//	FlagDigitCount--;
+				DiviserDigit = (DiviserDigit * 10) + Divisor.Digits[Divisor.Length - 2];
+				FlagDigitCount--;
 			}
 
 			//If DiviserDigit is less then 5 then take another digit with it
@@ -516,7 +508,7 @@ namespace VedicMathLibrary
 						++i;
 
 						//Calculate ED & r for this step 
-						long T = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j, false, 0);
+						long T = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j);
 						r += T;
 						r /= 10;
 
@@ -547,13 +539,7 @@ namespace VedicMathLibrary
 				if (i != NPOS)
 				{
 					T1 = r * 10 + QuotientDigits[i];
-					T2 = 0;
-					
-					size_t MinCount = FlagDigitCount < (QuotientDigitCount-j) ? FlagDigitCount : (QuotientDigitCount-j);
-					char* QDigits = Quotient.Digits + j;
-
-					for (size_t m = 0, n = FlagDigitCount - 1; m < MinCount; m++, n--)
-						T2 += (FlagDigits[n] * QDigits[m]);
+					T2 = VedicQuotientCrossMulti(FlagDigits, FlagDigitCount, Quotient.Digits + j, QuotientDigitCount - j);
 					
 					ED = T1 - T2;
 
