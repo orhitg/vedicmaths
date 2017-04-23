@@ -134,10 +134,10 @@ void RunTests(string ResultFileName, size_t MaxLength)
 
 
 
-void RunRandomNumberTest(size_t MaxLen, size_t Cycles)
+void RunRandomNumberTest(size_t MaxLen, size_t Cycles, string TestFileName, string ResultFileName)
 {
-	ifstream TestFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\TestFiles\\RandomNumbers_Set3.txt");
-	ofstream ResultFile("F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\ResultFiles\\RandomNumbers_Set3.csv");
+	ifstream TestFile(TestFileName);
+	ofstream ResultFile(ResultFileName);
 
 	HANDLE Th = GetCurrentThread();
 	UINT64 AvgVedic = 0, AvgTraditional = 0;
@@ -165,7 +165,7 @@ void RunRandomNumberTest(size_t MaxLen, size_t Cycles)
 
 			cout << "  Tr: " << AvgTraditional << "  , VEd: " << AvgVedic << endl;
 
-			ResultFile << Dividend.length() << "," << AvgTraditional << "," << AvgVedic;
+			ResultFile << Dividend.length() << "," << AvgTraditional << "," << AvgVedic << endl;
 
 			S += (AvgTraditional - AvgVedic);
 		}
@@ -212,7 +212,21 @@ int main()
 {
 	srand((unsigned)time(NULL));
 
-	RunRandomNumberTest(200, 10000);
+
+	RunRandomNumberTest(250, 10000,
+		"F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\TestFiles\\RandomNumbers_Set1.txt",
+		"F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\ResultFiles\\RandomNumbers_Set1.csv"
+	);
+
+	RunRandomNumberTest(250, 10000,
+		"F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\TestFiles\\RandomNumbers_Set2.txt",
+		"F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\ResultFiles\\RandomNumbers_Set2.csv"
+	);
+
+	RunRandomNumberTest(250, 10000, 
+		"F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\TestFiles\\RandomNumbers_Set3.txt",
+		"F:\\College\\Sem 8\\Project\\Library\\VedicMathLibrary\\Data\\ResultFiles\\RandomNumbers_Set3.csv"
+	);
 
 	//Temp();
 
