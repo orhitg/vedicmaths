@@ -320,7 +320,7 @@ namespace VedicMathLibrary
 				}
 
 
-				//If CrossProductLength is greater than result's length then remainder is 
+				//If CrossProductLength is greater than result then remainder is 
 				//negative and we should return
 				if (result->operator<(CrossProduct))
 					return;
@@ -350,71 +350,71 @@ namespace VedicMathLibrary
 		}
 
 		public:
-		void VedicMultiplication(const BCDInteger& Multiplier, BCDInteger& Product)const
-		{
-			size_t MaxLength = (this->Length > Multiplier.Length) ? this->Length : Multiplier.Length;
-
-			//Object holding result of this method
-			Product.Resize(this->Length + Multiplier.Length, false);
-			for (size_t i = 0; i < Product.Capacity; i++)
-				Product.Digits[i] = 0;
-
-
-			//Initialize X & Y such that X.Length >= Y.Length
-			const BCDInteger *X, *Y;
-			if (this->Length >= Multiplier.Length)
+			void VedicMultiplication(const BCDInteger& Multiplier, BCDInteger& Product)const
 			{
-				X = this;
-				Y = &Multiplier;
-			}
-			else
-			{
-				X = &Multiplier;
-				Y = this;
-			}
+				size_t MaxLength = (this->Length > Multiplier.Length) ? this->Length : Multiplier.Length;
+
+				//Object holding result of this method
+				Product.Resize(this->Length + Multiplier.Length, false);
+				for (size_t i = 0; i < Product.Capacity; i++)
+					Product.Digits[i] = 0;
 
 
-			size_t j = 0;
-
-
-			//Phase 1
-			for (size_t i = 0; i < X->Length; i++)
-			{
-				//Cross-Multiplication
-				char Ch;
-				for (size_t start = 0, end = i; start <= i; ++start, --end)
+				//Initialize X & Y such that X.Length >= Y.Length
+				const BCDInteger *X, *Y;
+				if (this->Length >= Multiplier.Length)
 				{
-					Ch = X->at(start) * Y->at(end) + Product.Digits[j];
-					Product.Digits[j] = Ch % 10;
-					Product.Digits[j + 1] += Ch / 10;
+					X = this;
+					Y = &Multiplier;
+				}
+				else
+				{
+					X = &Multiplier;
+					Y = this;
 				}
 
-				++j;
+
+				size_t j = 0;
 
 
-			}
-
-			//Phase 2
-			for (size_t i = 1; i < Y->Length; i++)
-			{
-				//Cross-Multiplication
-				char Ch;
-				for (size_t start = i, end = MaxLength - 1; start < MaxLength; ++start, --end)
+				//Phase 1
+				for (size_t i = 0; i < X->Length; i++)
 				{
-					Ch = X->at(start) * Y->at(end) + Product.Digits[j];
-					Product.Digits[j] = Ch % 10;
-					Product.Digits[j + 1] += Ch / 10;
+					//Cross-Multiplication
+					char Ch;
+					for (size_t start = 0, end = i; start <= i; ++start, --end)
+					{
+						Ch = X->at(start) * Y->at(end) + Product.Digits[j];
+						Product.Digits[j] = Ch % 10;
+						Product.Digits[j + 1] += Ch / 10;
+					}
+
+					++j;
+
+
 				}
 
-				++j;
+				//Phase 2
+				for (size_t i = 1; i < Y->Length; i++)
+				{
+					//Cross-Multiplication
+					char Ch;
+					for (size_t start = i, end = MaxLength - 1; start < MaxLength; ++start, --end)
+					{
+						Ch = X->at(start) * Y->at(end) + Product.Digits[j];
+						Product.Digits[j] = Ch % 10;
+						Product.Digits[j + 1] += Ch / 10;
+					}
+
+					++j;
+				}
+
+
+				//Set Proper Sign
+				Product.Positive = ((this->Positive && Multiplier.Positive) || (!this->Positive && !Multiplier.Positive));
+
+				Product.Normalize();
 			}
-
-
-			//Set Proper Sign
-			Product.Positive = ((this->Positive && Multiplier.Positive) || (!this->Positive && !Multiplier.Positive));
-
-			Product.Normalize();
-		}
 		void VedicDivision(const BCDInteger& Divisor, BCDInteger& Quotient, BCDInteger& Remainder)const
 		{
 			//Check if Divisor is Zero
